@@ -137,7 +137,69 @@
                         <h2 class="text-2xl font-bold tracking-tight text-gray-950">@yield('page-title', 'Dashboard')</h2>
                     </div>
                     @auth
+                        @php
+                            $headerNotifications = \App\Models\WorkspaceNotification::query()
+                                ->visibleTo(auth()->user())
+                                ->with(['project:id,title'])
+                                ->latest()
+                                ->limit(5)
+                                ->get();
+                            $headerUnreadNotificationsCount = $unreadNotificationsCount ?? \App\Models\WorkspaceNotification::query()
+                                ->visibleTo(auth()->user())
+                                ->unread()
+                                ->count();
+                        @endphp
                         <div class="flex items-center gap-3">
+                            <div class="relative" x-data="{ openNotifications: false }" @click.outside="openNotifications = false">
+                                <button type="button" @click="openNotifications = ! openNotifications" class="relative grid size-10 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:bg-gray-50" aria-label="Notifications">
+                                    <span>⌁</span>
+                                    @if ($headerUnreadNotificationsCount > 0)
+                                        <span class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{{ $headerUnreadNotificationsCount }}</span>
+                                    @endif
+                                </button>
+
+                                <div x-show="openNotifications" x-cloak x-transition.opacity.duration.150ms class="absolute right-0 z-40 mt-3 w-96 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+                                    <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                                        <div>
+                                            <p class="text-sm font-bold text-gray-950">Notifications</p>
+                                            <p class="text-xs font-semibold text-gray-400">{{ $headerUnreadNotificationsCount }} unread</p>
+                                        </div>
+                                        <form method="POST" action="{{ route('notifications.read-all') }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button class="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50">Mark all read</button>
+                                        </form>
+                                    </div>
+
+                                    <div class="max-h-96 overflow-y-auto p-2">
+                                        @forelse ($headerNotifications as $notification)
+                                            <div class="rounded-xl p-3 transition {{ $notification->read_at ? 'hover:bg-gray-50' : 'bg-indigo-50/60 hover:bg-indigo-50' }}">
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <a href="{{ $notification->project ? route('projects.show', $notification->project) : route('notifications.index') }}" class="min-w-0 flex-1">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="size-2 shrink-0 rounded-full {{ $notification->read_at ? 'bg-gray-300' : 'bg-indigo-500' }}"></span>
+                                                            <p class="truncate text-sm font-semibold text-gray-950">{{ $notification->title }}</p>
+                                                        </div>
+                                                        <p class="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{{ $notification->body }}</p>
+                                                        <p class="mt-2 text-[11px] font-semibold text-gray-400">{{ $notification->created_at->diffForHumans() }}</p>
+                                                    </a>
+                                                    @unless ($notification->read_at)
+                                                        <form method="POST" action="{{ route('notifications.read', $notification) }}">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button class="rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 transition hover:bg-white">Read</button>
+                                                        </form>
+                                                    @endunless
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <p class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">No notifications yet.</p>
+                                        @endforelse
+                                    </div>
+
+                                    <a href="{{ route('notifications.index') }}" class="block border-t border-gray-100 px-4 py-3 text-center text-sm font-semibold text-indigo-600 transition hover:bg-gray-50">Open notification center</a>
+                                </div>
+                            </div>
                             @can('create', \App\Models\Project::class)
                                 <a href="{{ route('projects.create') }}" class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">New Project</a>
                             @endcan
