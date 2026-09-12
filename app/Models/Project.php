@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\FastSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,13 +43,7 @@ class Project extends Model
 
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
-        $keyword = trim((string) $keyword);
-
-        if ($keyword === '') {
-            return $query;
-        }
-
-        return $query->whereFullText('search_text', $keyword);
+        return FastSearch::apply($query, $keyword);
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

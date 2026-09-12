@@ -1,7 +1,7 @@
 const liveSearchControllers = new WeakMap();
 const prefetchedUrls = new Set();
 
-function debounce(callback, delay = 220) {
+function debounce(callback, delay = 110) {
     let timeout;
 
     return (...args) => {
