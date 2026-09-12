@@ -18,6 +18,12 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+/storage/app/private/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
 /storage/*.key
 /storage/pail
 /vendor
@@ -25,3 +31,14 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+CLAUDE.md
+!storage/app/private/.keep
+!storage/app/public/.keep
+!storage/framework/cache/data/.keep
+!storage/framework/sessions/.keep
+!storage/framework/testing/.keep
+!storage/framework/views/.keep
+!storage/logs/.keep
+.npmrc
+AGENTS.md
+.keep
