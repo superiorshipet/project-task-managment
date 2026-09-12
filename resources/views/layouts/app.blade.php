@@ -24,9 +24,7 @@
                 @endauth
 
                 <div class="mb-6">
-                    <div class="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-[#202437] to-indigo-500/25 p-3 shadow-lg shadow-black/10">
-                        <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="h-16 w-full rounded-xl object-cover object-left">
-                    </div>
+                    <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="h-20 w-full object-contain object-left">
                     <p class="mt-3 px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Project Hub</p>
                 </div>
 
