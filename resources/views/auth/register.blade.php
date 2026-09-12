@@ -25,5 +25,5 @@
 @section('aside')
     <h2 class="text-4xl font-bold tracking-tight">Welcome Back!</h2>
     <p class="mt-6 text-sm leading-6 text-white/85">Sign in to keep projects, tasks, and updates moving smoothly.</p>
-    <a href="{{ route('login') }}" class="mt-8 inline-flex h-12 min-w-44 items-center justify-center rounded-full border border-white px-8 text-sm font-semibold text-white transition hover:bg-white hover:text-blue-800">Sign In</a>
+    <a href="{{ route('login') }}" data-auth-transition="login" class="mt-8 inline-flex h-12 min-w-44 items-center justify-center rounded-full border border-white px-8 text-sm font-semibold text-white transition hover:bg-white hover:text-blue-800">Sign In</a>
 @endsection

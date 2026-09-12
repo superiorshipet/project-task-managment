@@ -30,5 +30,5 @@
 @section('aside')
     <h2 class="text-4xl font-bold tracking-tight">Hey There!</h2>
     <p class="mt-6 text-sm leading-6 text-white/85">Create your account now and step into your team workspace.</p>
-    <a href="{{ route('register') }}" class="mt-8 inline-flex h-12 min-w-44 items-center justify-center rounded-full border border-white px-8 text-sm font-semibold text-white transition hover:bg-white hover:text-blue-800">Sign Up</a>
+    <a href="{{ route('register') }}" data-auth-transition="register" class="mt-8 inline-flex h-12 min-w-44 items-center justify-center rounded-full border border-white px-8 text-sm font-semibold text-white transition hover:bg-white hover:text-blue-800">Sign Up</a>
 @endsection

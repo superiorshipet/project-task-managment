@@ -27,12 +27,34 @@
 
         .auth-form-panel {
             view-transition-name: auth-form;
+            transition: transform 620ms cubic-bezier(.22, 1, .36, 1), opacity 620ms cubic-bezier(.22, 1, .36, 1);
             animation: {{ $isRegister ? 'auth-form-from-right' : 'auth-form-from-left' }} 520ms cubic-bezier(.22, 1, .36, 1) both;
+            will-change: transform, opacity;
         }
 
         .auth-color-panel {
             view-transition-name: auth-panel;
+            transition: transform 620ms cubic-bezier(.22, 1, .36, 1), opacity 620ms cubic-bezier(.22, 1, .36, 1);
             animation: {{ $isRegister ? 'auth-panel-from-left' : 'auth-panel-from-right' }} 520ms cubic-bezier(.22, 1, .36, 1) both;
+            will-change: transform, opacity;
+        }
+
+        .auth-shell.auth-leaving-register .auth-form-panel {
+            transform: translateX(100%);
+            opacity: .2;
+        }
+
+        .auth-shell.auth-leaving-register .auth-color-panel {
+            transform: translateX(-100%);
+        }
+
+        .auth-shell.auth-leaving-login .auth-form-panel {
+            transform: translateX(-100%);
+            opacity: .2;
+        }
+
+        .auth-shell.auth-leaving-login .auth-color-panel {
+            transform: translateX(100%);
         }
 
         @keyframes auth-form-from-left {
@@ -54,11 +76,19 @@
             from { opacity: .75; transform: translateX(32px) scale(.98); }
             to { opacity: 1; transform: translateX(0) scale(1); }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-form-panel,
+            .auth-color-panel {
+                animation: none;
+                transition: none;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-[#eef2ff] font-sans text-slate-950 antialiased">
     <main class="grid min-h-screen place-items-center px-4 py-8">
-        <section class="grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-2xl shadow-slate-300/60 lg:min-h-[650px] lg:grid-cols-2">
+        <section class="auth-shell grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-2xl shadow-slate-300/60 lg:min-h-[650px] lg:grid-cols-2" data-auth-mode="{{ $authMode }}">
             <div class="auth-form-panel flex items-center justify-center bg-white/95 px-6 py-10 sm:px-10 lg:px-16 {{ $isRegister ? 'lg:order-2' : 'lg:order-1' }}">
                 <div class="w-full max-w-sm">
                     <div class="mb-10 flex justify-center">
@@ -94,5 +124,28 @@
             </aside>
         </section>
     </main>
+    <script>
+        document.querySelectorAll('[data-auth-transition]').forEach((link) => {
+            link.addEventListener('click', (event) => {
+                if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+
+                const shell = document.querySelector('[data-auth-mode]');
+                const targetMode = link.dataset.authTransition;
+
+                if (!shell || !targetMode || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    return;
+                }
+
+                event.preventDefault();
+                shell.classList.add(targetMode === 'register' ? 'auth-leaving-register' : 'auth-leaving-login');
+
+                window.setTimeout(() => {
+                    window.location.href = link.href;
+                }, 360);
+            });
+        });
+    </script>
 </body>
 </html>
