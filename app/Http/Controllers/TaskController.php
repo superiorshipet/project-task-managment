@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Support\WorkspaceLookups;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
@@ -113,15 +114,24 @@ class TaskController extends Controller
         return redirect()->route('projects.show', $task->project)->with('status', 'Task updated successfully.');
     }
 
-    public function updateStatus(UpdateTaskStatusRequest $request, Task $task): RedirectResponse
+    public function updateStatus(UpdateTaskStatusRequest $request, Task $task): JsonResponse|RedirectResponse
     {
         $status = $request->validated('status');
+        $progress = $this->progressFor($status, $task->progress);
 
         $task->update([
             'status' => $status,
-            'progress' => $this->progressFor($status, $task->progress),
+            'progress' => $progress,
         ]);
         $this->touchTaskBoardCaches($task->project_id);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'id' => $task->id,
+                'status' => $status,
+                'progress' => $progress,
+            ]);
+        }
 
         return back()->with('status', 'Task status updated.');
     }

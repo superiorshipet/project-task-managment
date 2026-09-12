@@ -6,7 +6,7 @@
     ][$task->priority] ?? 'bg-gray-100 text-gray-700';
 @endphp
 
-<article class="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+<article class="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" data-task-card data-task-status="{{ $task->status }}">
     @if ($task->attachment && str($task->attachment)->endsWith(['jpg', 'jpeg', 'png', 'webp']))
         <img src="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" alt="{{ $task->title }}" loading="lazy" class="mb-3 h-32 w-full rounded-xl object-cover">
     @endif
@@ -59,7 +59,7 @@
 
     <div class="mt-3 grid grid-cols-3 gap-1">
         @foreach (['pending' => 'To Do', 'in_progress' => 'Doing', 'completed' => 'Done'] as $status => $label)
-            <form method="POST" action="{{ route('tasks.status', $task) }}">
+            <form method="POST" action="{{ route('tasks.status', $task) }}" data-status-form>
                 @csrf
                 @method('PATCH')
                 <input type="hidden" name="status" value="{{ $status }}">
