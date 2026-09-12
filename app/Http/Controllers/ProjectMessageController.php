@@ -3,15 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\ProjectMessage;
 use App\Models\User;
 use App\Models\WorkspaceNotification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ProjectMessageController extends Controller
 {
-    public function store(Request $request, Project $project): RedirectResponse
+    public function index(Request $request, Project $project): JsonResponse
+    {
+        $this->authorize('view', $project);
+
+        $messages = $project->messages()
+            ->with('user:id,name,email,role')
+            ->when($request->filled('after_id'), fn ($query) => $query->where('id', '>', $request->integer('after_id')))
+            ->oldest()
+            ->limit(80)
+            ->get();
+
+        return response()->json([
+            'messages' => $messages->map(fn (ProjectMessage $message) => $this->messagePayload($message))->values(),
+        ]);
+    }
+
+    public function store(Request $request, Project $project): RedirectResponse|JsonResponse
     {
         $this->authorize('view', $project);
 
@@ -30,7 +48,7 @@ class ProjectMessageController extends Controller
             'user_id' => $request->user()->id,
             'body' => $validated['body'],
             'mentioned_user_ids' => $mentionedUsers->pluck('id')->all(),
-        ]);
+        ])->load('user:id,name,email,role');
 
         foreach ($mentionedUsers as $mentionedUser) {
             WorkspaceNotification::query()->create([
@@ -47,9 +65,30 @@ class ProjectMessageController extends Controller
             ]);
         }
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $this->messagePayload($message),
+            ], 201);
+        }
+
         return redirect()
             ->route('projects.show', ['project' => $project, 'tab' => 'mentions'])
             ->with('status', 'Message sent.');
+    }
+
+    private function messagePayload(ProjectMessage $message): array
+    {
+        return [
+            'id' => $message->id,
+            'body' => $message->body,
+            'mentioned' => filled($message->mentioned_user_ids),
+            'created_at' => $message->created_at?->diffForHumans(),
+            'user' => [
+                'id' => $message->user?->id,
+                'name' => $message->user?->name,
+                'initials' => str($message->user?->name ?? 'NA')->substr(0, 2)->upper()->toString(),
+            ],
+        ];
     }
 
     private function mentionableUsers(Project $project)

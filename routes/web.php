@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/team/{user}', [TeamController::class, 'destroy'])->name('team.destroy');
     Route::delete('/projects/{project}/users/{user}', [TeamController::class, 'removeFromProject'])->name('projects.users.destroy');
     Route::post('/projects/{project}/invitations', [ProjectInvitationController::class, 'store'])->name('projects.invitations.store');
+    Route::get('/projects/{project}/messages', [ProjectMessageController::class, 'index'])->name('projects.messages.index');
     Route::post('/projects/{project}/messages', [ProjectMessageController::class, 'store'])->name('projects.messages.store');
     Route::patch('/project-invitations/{invitation}/accept', [ProjectInvitationController::class, 'accept'])->name('project-invitations.accept');
 

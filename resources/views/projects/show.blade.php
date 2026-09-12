@@ -123,12 +123,12 @@
                         <h3 class="text-lg font-bold">Project chat</h3>
                         <p class="text-sm text-gray-500">Use @handle to notify a teammate.</p>
                     </div>
-                    <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $projectMessages->count() }} messages</span>
+                    <span data-chat-count class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $projectMessages->count() }} messages</span>
                 </div>
 
-                <div class="mb-5 max-h-[520px] space-y-3 overflow-y-auto rounded-2xl bg-gray-50 p-3">
+                <div class="mb-5 max-h-[520px] space-y-3 overflow-y-auto rounded-2xl bg-gray-50 p-3" data-chat-messages data-last-message-id="{{ $projectMessages->last()?->id ?? 0 }}">
                     @forelse ($projectMessages as $message)
-                        <article class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                        <article class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm" data-chat-message-id="{{ $message->id }}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex min-w-0 items-center gap-3">
                                     <span class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-bold text-white">{{ str($message->user->name)->substr(0, 2)->upper() }}</span>
@@ -144,7 +144,7 @@
                             <p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600">{{ $message->body }}</p>
                         </article>
                     @empty
-                        <p class="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No chat messages yet.</p>
+                        <p data-chat-empty class="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No chat messages yet.</p>
                     @endforelse
                 </div>
 
@@ -162,7 +162,7 @@
                     })->values();
                 @endphp
 
-                <form method="POST" action="{{ route('projects.messages.store', $project) }}" class="space-y-3" data-mention-chat data-mention-users='@json($mentionSuggestions)'>
+                <form method="POST" action="{{ route('projects.messages.store', $project) }}" class="space-y-3" data-mention-chat data-chat-feed-url="{{ route('projects.messages.index', $project) }}" data-mention-users='@json($mentionSuggestions)'>
                     @csrf
                     <div class="relative">
                         <textarea name="body" rows="4" required maxlength="3000" data-mention-input class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-400" placeholder="Write a message... try {{ '@'.Str::of($mentionableUsers->first()?->name ?? 'teammate')->lower()->replace(' ', '.') }}"></textarea>
@@ -184,10 +184,14 @@
 
             const input = chat.querySelector('[data-mention-input]');
             const list = chat.querySelector('[data-mention-list]');
+            const messages = document.querySelector('[data-chat-messages]');
+            const submitButton = chat.querySelector('button[type="submit"], button:not([type])');
+            const tokenInput = chat.querySelector('input[name="_token"]');
             const users = JSON.parse(chat.dataset.mentionUsers || '[]');
             let activeIndex = 0;
             let matches = [];
             let token = null;
+            let sending = false;
 
             function escapeHtml(value) {
                 return String(value || '').replace(/[&<>"']/g, (char) => ({
@@ -267,6 +271,72 @@
                 hideList();
             }
 
+            function messageMarkup(message, pending = false) {
+                return `
+                    <article class="rounded-2xl border ${pending ? 'border-indigo-100 bg-indigo-50/40' : 'border-gray-100 bg-white'} p-4 shadow-sm" data-chat-message-id="${escapeHtml(message.id)}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex min-w-0 items-center gap-3">
+                                <span class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-bold text-white">${escapeHtml(message.user?.initials || 'NA')}</span>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-bold text-gray-950">${escapeHtml(message.user?.name || 'Unknown')}</p>
+                                    <p class="text-xs font-semibold text-gray-400">${pending ? 'Sending...' : escapeHtml(message.created_at)}</p>
+                                </div>
+                            </div>
+                            ${message.mentioned ? '<span class="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Mention</span>' : ''}
+                        </div>
+                        <p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600">${escapeHtml(message.body)}</p>
+                    </article>
+                `;
+            }
+
+            function scrollChatToBottom() {
+                if (messages) {
+                    messages.scrollTop = messages.scrollHeight;
+                }
+            }
+
+            function appendMessage(message, pending = false) {
+                if (!messages || messages.querySelector(`[data-chat-message-id="${message.id}"]`)) {
+                    return;
+                }
+
+                messages.querySelector('[data-chat-empty]')?.remove();
+                messages.insertAdjacentHTML('beforeend', messageMarkup(message, pending));
+
+                if (!pending && Number(message.id) > Number(messages.dataset.lastMessageId || 0)) {
+                    messages.dataset.lastMessageId = String(message.id);
+                }
+
+                const count = document.querySelector('[data-chat-count]');
+                if (count && !pending) {
+                    const current = Number.parseInt(count.textContent || '0', 10);
+                    count.textContent = `${current + 1} messages`;
+                }
+
+                scrollChatToBottom();
+            }
+
+            function replacePendingMessage(pendingId, message) {
+                messages?.querySelector(`[data-chat-message-id="${pendingId}"]`)?.remove();
+                appendMessage(message);
+            }
+
+            async function fetchMessages() {
+                if (!messages || !chat.dataset.chatFeedUrl) return;
+
+                const url = new URL(chat.dataset.chatFeedUrl, window.location.origin);
+                url.searchParams.set('after_id', messages.dataset.lastMessageId || '0');
+
+                const response = await fetch(url, {
+                    headers: { Accept: 'application/json' },
+                });
+
+                if (!response.ok) return;
+
+                const payload = await response.json();
+                (payload.messages || []).forEach((message) => appendMessage(message));
+            }
+
             input.addEventListener('input', () => {
                 token = currentToken();
 
@@ -317,6 +387,64 @@
                     hideList();
                 }
             });
+
+            chat.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const body = input.value.trim();
+                if (!body || sending) return;
+
+                sending = true;
+                submitButton.disabled = true;
+
+                const pendingId = `pending-${Date.now()}`;
+                appendMessage({
+                    id: pendingId,
+                    body,
+                    mentioned: /@[A-Za-z0-9._-]+/.test(body),
+                    user: {
+                        name: @json(auth()->user()->name),
+                        initials: @json(str(auth()->user()->name)->substr(0, 2)->upper()->toString()),
+                    },
+                }, true);
+
+                input.value = '';
+                hideList();
+                const formData = new FormData(chat);
+                formData.set('body', body);
+
+                try {
+                    const response = await fetch(chat.action, {
+                        method: 'POST',
+                        headers: {
+                            Accept: 'application/json',
+                            'X-CSRF-TOKEN': tokenInput?.value || '',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Message send failed with ${response.status}`);
+                    }
+
+                    const payload = await response.json();
+                    replacePendingMessage(pendingId, payload.message);
+                } catch (error) {
+                    console.error(error);
+                    const pending = messages?.querySelector(`[data-chat-message-id="${pendingId}"]`);
+                    pending?.classList.remove('border-indigo-100', 'bg-indigo-50/40');
+                    pending?.classList.add('border-rose-200', 'bg-rose-50');
+                    input.value = body;
+                    alert('Message could not be sent. Please try again.');
+                } finally {
+                    sending = false;
+                    submitButton.disabled = false;
+                }
+            });
+
+            scrollChatToBottom();
+            setInterval(() => fetchMessages().catch(console.error), 1000);
         })();
     </script>
 @endsection
