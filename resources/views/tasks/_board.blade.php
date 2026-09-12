@@ -9,7 +9,7 @@
                     @endforeach
                 </select>
             @endif
-            <input name="q" value="{{ request('q') }}" placeholder="Search tasks" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+            <input name="q" value="{{ request('q') }}" placeholder="Search tasks" data-project-task-search class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
             <select name="status" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                 <option value="">All status</option>
                 @foreach (['todo' => 'To Do', 'in_progress' => 'In Progress', 'completed' => 'Completed'] as $value => $label)

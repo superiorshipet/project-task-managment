@@ -70,6 +70,7 @@ class TeamController extends Controller
             ->where('project_id', $project->id)
             ->where('assigned_to', $user->id)
             ->update(['assigned_to' => null]);
+        $project->members()->detach($user->id);
 
         Cache::increment('tasks.board.version');
         Cache::increment("project.board.version.{$project->id}");

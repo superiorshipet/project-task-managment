@@ -47,6 +47,11 @@ class Project extends Model
         return $this->belongsToMany(User::class, 'project_favorites')->withTimestamps();
     }
 
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_members')->withTimestamps();
+    }
+
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
         return FastSearch::apply($query, $keyword);
@@ -65,7 +70,8 @@ class Project extends Model
                 return;
             }
 
-            $query->whereHas('tasks', fn (Builder $tasks) => $tasks->where('assigned_to', $user->id));
+            $query->whereHas('tasks', fn (Builder $tasks) => $tasks->where('assigned_to', $user->id))
+                ->orWhereHas('members', fn (Builder $members) => $members->whereKey($user->id));
         });
     }
 

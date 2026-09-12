@@ -68,7 +68,8 @@ class Task extends Model
                 return;
             }
 
-            $query->where('assigned_to', $user->id);
+            $query->where('assigned_to', $user->id)
+                ->orWhereHas('project.members', fn (Builder $members) => $members->whereKey($user->id));
         });
     }
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProjectFavoriteController;
+use App\Http\Controllers\ProjectInvitationController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
@@ -31,6 +32,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::delete('/team/{user}', [TeamController::class, 'destroy'])->name('team.destroy');
     Route::delete('/projects/{project}/users/{user}', [TeamController::class, 'removeFromProject'])->name('projects.users.destroy');
+    Route::post('/projects/{project}/invitations', [ProjectInvitationController::class, 'store'])->name('projects.invitations.store');
+    Route::patch('/project-invitations/{invitation}/accept', [ProjectInvitationController::class, 'accept'])->name('project-invitations.accept');
 
     Route::resource('projects', ProjectController::class);
     Route::post('/projects/{project}/favorite', [ProjectFavoriteController::class, 'toggle'])->name('projects.favorite');

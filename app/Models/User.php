@@ -54,6 +54,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Project::class, 'project_favorites')->withTimestamps();
     }
 
+    public function memberProjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_members')->withTimestamps();
+    }
+
     public function notifications(): HasMany
     {
         return $this->hasMany(WorkspaceNotification::class);
