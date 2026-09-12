@@ -27,6 +27,55 @@ function taskMatchesSearch(card, terms) {
     return terms.every((term) => searchableWords.some((word) => word.startsWith(term)));
 }
 
+function todayIsoDate() {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+
+    return date.toISOString().slice(0, 10);
+}
+
+function endOfWeekIsoDate() {
+    const date = new Date();
+    const day = date.getDay();
+    const daysUntilSunday = day === 0 ? 0 : 7 - day;
+    date.setDate(date.getDate() + daysUntilSunday);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+
+    return date.toISOString().slice(0, 10);
+}
+
+function taskMatchesDueDate(card, dueDate, dueRange) {
+    const cardDueDate = String(card.dataset.taskDueDate || '');
+
+    if (dueDate) {
+        return cardDueDate === dueDate;
+    }
+
+    if (!dueRange) {
+        return true;
+    }
+
+    if (!cardDueDate) {
+        return false;
+    }
+
+    const today = todayIsoDate();
+
+    if (dueRange === 'today') {
+        return cardDueDate === today;
+    }
+
+    if (dueRange === 'week') {
+        return cardDueDate >= today && cardDueDate <= endOfWeekIsoDate();
+    }
+
+    if (dueRange === 'overdue') {
+        return cardDueDate < today && card.dataset.taskStatus !== 'completed';
+    }
+
+    return true;
+}
+
 function syncClientEmptyState(column, visibleCount) {
     let empty = column.querySelector('[data-client-empty]');
 
@@ -55,14 +104,17 @@ function applyInstantBoardFilter(form) {
     const status = String(data.get('status') || '');
     const assignedTo = String(data.get('assigned_to') || '');
     const projectId = String(data.get('project_id') || '');
+    const dueDate = String(data.get('due_date') || '');
+    const dueRange = String(data.get('due_range') || '');
     const terms = normalizedWords(data.get('q'));
 
     target.querySelectorAll('[data-client-empty]').forEach((empty) => empty.remove());
 
     target.querySelectorAll('[data-task-card]').forEach((card) => {
-    const matches = (!status || card.dataset.taskStatus === status)
+        const matches = (!status || card.dataset.taskStatus === status)
             && (!assignedTo || String(card.dataset.taskAssignedTo || '').split(',').includes(assignedTo))
             && (!projectId || card.dataset.taskProjectId === projectId)
+            && taskMatchesDueDate(card, dueDate, dueRange)
             && taskMatchesSearch(card, terms);
 
         card.hidden = !matches;

@@ -84,6 +84,8 @@ class ProjectController extends Controller
             ->when($request->filled('assigned_to'), fn ($query) => $query->where(fn ($tasks) => $tasks
                 ->where('assigned_to', $request->integer('assigned_to'))
                 ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($request->integer('assigned_to')))))
+            ->when($request->filled('due_date'), fn ($query) => $query->whereDate('due_date', $request->date('due_date')->toDateString()))
+            ->when($request->filled('due_range'), fn ($query) => $this->applyDueRange($query, $request->string('due_range')->toString()))
             ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
             ->orderBy('due_date');
 
@@ -163,7 +165,7 @@ class ProjectController extends Controller
     private function cachedTaskBoard($query, Request $request, int $projectId)
     {
         $version = Cache::get("project.board.version.{$projectId}", 1);
-        $filters = collect($request->only(['q', 'status', 'assigned_to']))
+        $filters = collect($request->only(['q', 'status', 'assigned_to', 'due_date', 'due_range']))
             ->map(fn ($value) => is_string($value) ? trim($value) : $value)
             ->filter(fn ($value) => filled($value))
             ->all();
@@ -190,5 +192,15 @@ class ProjectController extends Controller
             ->sortBy(fn (Task $task) => $positions[$task->id] ?? PHP_INT_MAX)
             ->values()
             ->groupBy('status');
+    }
+
+    private function applyDueRange($query, string $range)
+    {
+        return match ($range) {
+            'today' => $query->whereDate('due_date', now()->toDateString()),
+            'week' => $query->whereBetween('due_date', [now()->startOfDay(), now()->endOfWeek()]),
+            'overdue' => $query->whereDate('due_date', '<', now()->toDateString())->where('status', '!=', 'completed'),
+            default => $query,
+        };
     }
 }

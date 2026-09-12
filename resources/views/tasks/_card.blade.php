@@ -19,6 +19,7 @@
     data-task-status="{{ $task->status }}"
     data-task-project-id="{{ $task->project_id }}"
     data-task-assigned-to="{{ $taskAssigneeIds->implode(',') }}"
+    data-task-due-date="{{ $task->due_date?->toDateString() }}"
     data-task-search="{{ str($task->title.' '.$task->description.' '.$task->priority.' '.$task->status.' '.$task->project?->title.' '.$taskAssigneeNames)->lower() }}"
     draggable="true"
 >

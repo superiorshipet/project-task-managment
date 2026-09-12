@@ -1,6 +1,12 @@
 <div x-data="{ openTaskModal: false }">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         <form class="grid flex-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_180px_180px_auto]" data-live-search data-live-mode="client" data-live-target="#task-board-columns" data-live-partial="1">
+            @if (request('due_date'))
+                <input type="hidden" name="due_date" value="{{ request('due_date') }}">
+            @endif
+            @if (request('due_range'))
+                <input type="hidden" name="due_range" value="{{ request('due_range') }}">
+            @endif
             @if (!isset($project) || ! $project)
                 <select name="project_id" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                     <option value="">All projects</option>
@@ -29,6 +35,20 @@
             <button type="button" @click="openTaskModal = true" class="rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 transition hover:bg-indigo-500">New Task</button>
         @endcan
     </div>
+
+    @if (request('due_date') || request('due_range'))
+        <div class="mb-5 flex flex-wrap items-center gap-2 text-sm">
+            <span class="rounded-full bg-indigo-50 px-3 py-1 font-semibold text-indigo-700">
+                Deadline:
+                @if (request('due_date'))
+                    {{ \Carbon\Carbon::parse(request('due_date'))->format('d M Y') }}
+                @else
+                    {{ str(request('due_range'))->replace('_', ' ')->title() }}
+                @endif
+            </span>
+            <a href="{{ isset($project) && $project ? route('projects.show', $project) : route('tasks.index') }}" class="rounded-full border border-gray-200 bg-white px-3 py-1 font-semibold text-gray-600 transition hover:bg-gray-50">Clear</a>
+        </div>
+    @endif
 
     <div id="task-board-columns">
         @include('tasks._columns', ['tasksByStatus' => $tasksByStatus])

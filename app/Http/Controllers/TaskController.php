@@ -8,10 +8,11 @@ use App\Http\Requests\UpdateTaskStatusRequest;
 use App\Mail\TaskAssignedMail;
 use App\Models\Project;
 use App\Models\Task;
-use App\Support\WorkspaceNotifier;
+use App\Models\User;
 use App\Support\WorkspaceLookups;
-use Illuminate\Http\RedirectResponse;
+use App\Support\WorkspaceNotifier;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
@@ -32,6 +33,8 @@ class TaskController extends Controller
             ->when($request->filled('assigned_to'), fn ($query) => $query->where(fn ($tasks) => $tasks
                 ->where('assigned_to', $request->integer('assigned_to'))
                 ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($request->integer('assigned_to')))))
+            ->when($request->filled('due_date'), fn ($query) => $query->whereDate('due_date', $request->date('due_date')->toDateString()))
+            ->when($request->filled('due_range'), fn ($query) => $this->applyDueRange($query, $request->string('due_range')->toString()))
             ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
             ->orderBy('due_date');
 
@@ -123,7 +126,7 @@ class TaskController extends Controller
         $newAssignedUserIds = collect($assignedUserIds)->diff($oldAssignedUserIds)->values();
 
         if ($newAssignedUserIds->isNotEmpty()) {
-            $newUsers = \App\Models\User::query()->whereIn('id', $newAssignedUserIds)->get();
+            $newUsers = User::query()->whereIn('id', $newAssignedUserIds)->get();
             $task->loadMissing('project');
             $this->sendAssignmentEmails($task, $newUsers);
             WorkspaceNotifier::taskAssignedTo($task, $newUsers);
@@ -226,7 +229,7 @@ class TaskController extends Controller
     private function cachedTaskBoard($query, Request $request)
     {
         $version = Cache::get('tasks.board.version', 1);
-        $filters = collect($request->only(['q', 'status', 'project_id', 'assigned_to']))
+        $filters = collect($request->only(['q', 'status', 'project_id', 'assigned_to', 'due_date', 'due_range']))
             ->map(fn ($value) => is_string($value) ? trim($value) : $value)
             ->filter(fn ($value) => filled($value))
             ->all();
@@ -252,6 +255,16 @@ class TaskController extends Controller
             ->sortBy(fn (Task $task) => $positions[$task->id] ?? PHP_INT_MAX)
             ->values()
             ->groupBy('status');
+    }
+
+    private function applyDueRange($query, string $range)
+    {
+        return match ($range) {
+            'today' => $query->whereDate('due_date', now()->toDateString()),
+            'week' => $query->whereBetween('due_date', [now()->startOfDay(), now()->endOfWeek()]),
+            'overdue' => $query->whereDate('due_date', '<', now()->toDateString())->where('status', '!=', 'completed'),
+            default => $query,
+        };
     }
 
     private function touchTaskBoardCaches(int $projectId): void

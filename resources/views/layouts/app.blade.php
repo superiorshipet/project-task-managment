@@ -109,18 +109,77 @@
                     </div>
                 </div>
 
+                @php
+                    $calendarMonth = now()->startOfMonth();
+                    $calendarLeadingBlanks = $calendarMonth->isoWeekday() - 1;
+                    $calendarCells = (int) ceil(($calendarLeadingBlanks + $calendarMonth->daysInMonth) / 7) * 7;
+                    $calendarDeadlineCounts = \App\Models\Task::query()
+                        ->visibleTo(auth()->user())
+                        ->whereNotNull('due_date')
+                        ->whereBetween('due_date', [$calendarMonth->copy()->startOfDay(), $calendarMonth->copy()->endOfMonth()->endOfDay()])
+                        ->selectRaw('DATE(due_date) as day, count(*) as total')
+                        ->groupByRaw('DATE(due_date)')
+                        ->pluck('total', 'day');
+                    $upcomingSidebarTasks = \App\Models\Task::query()
+                        ->visibleTo(auth()->user())
+                        ->with(['project:id,title'])
+                        ->whereNotNull('due_date')
+                        ->whereDate('due_date', '>=', now()->toDateString())
+                        ->orderBy('due_date')
+                        ->limit(3)
+                        ->get();
+                @endphp
                 <div class="mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
                     <div class="mb-4 flex items-center justify-between">
                         <p class="text-sm font-semibold">Calendar</p>
-                        <p class="text-xs text-slate-500">{{ now()->format('M Y') }}</p>
+                        <p class="text-xs text-slate-500">{{ $calendarMonth->format('M Y') }}</p>
+                    </div>
+                    <div class="mb-4 grid grid-cols-3 gap-2 text-[11px] font-semibold">
+                        <a href="{{ route('tasks.index', ['due_range' => 'today']) }}" class="rounded-lg bg-white/10 px-2 py-1.5 text-center text-slate-200 transition hover:bg-white/15 hover:text-white">Today</a>
+                        <a href="{{ route('tasks.index', ['due_range' => 'week']) }}" class="rounded-lg bg-white/10 px-2 py-1.5 text-center text-slate-200 transition hover:bg-white/15 hover:text-white">Week</a>
+                        <a href="{{ route('tasks.index', ['due_range' => 'overdue']) }}" class="rounded-lg bg-rose-500/15 px-2 py-1.5 text-center text-rose-200 transition hover:bg-rose-500/25 hover:text-white">Overdue</a>
                     </div>
                     <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-slate-500">
                         @foreach (['M','T','W','T','F','S','S'] as $day)
                             <span>{{ $day }}</span>
                         @endforeach
-                        @for ($i = 1; $i <= 35; $i++)
-                            <span class="rounded-lg py-1 {{ $i === (int) now()->format('j') ? 'bg-indigo-500 text-white' : 'text-slate-300' }}">{{ $i <= now()->daysInMonth ? $i : '' }}</span>
+                        @for ($i = 0; $i < $calendarCells; $i++)
+                            @php
+                                $calendarDay = $i - $calendarLeadingBlanks + 1;
+                                $calendarDate = $calendarDay >= 1 && $calendarDay <= $calendarMonth->daysInMonth
+                                    ? $calendarMonth->copy()->day($calendarDay)
+                                    : null;
+                                $calendarDateKey = $calendarDate?->toDateString();
+                                $deadlineCount = $calendarDateKey ? (int) ($calendarDeadlineCounts[$calendarDateKey] ?? 0) : 0;
+                                $isToday = $calendarDateKey === now()->toDateString();
+                            @endphp
+
+                            @if ($calendarDate)
+                                <a href="{{ route('tasks.index', ['due_date' => $calendarDateKey]) }}" class="relative rounded-lg py-1 transition {{ $isToday ? 'bg-indigo-500 text-white' : ($deadlineCount > 0 ? 'bg-white/10 text-white hover:bg-white/15' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200') }}" title="{{ $deadlineCount }} due {{ \Illuminate\Support\Str::plural('task', $deadlineCount) }}">
+                                    {{ $calendarDay }}
+                                    @if ($deadlineCount > 0)
+                                        <span class="absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full {{ $isToday ? 'bg-white' : 'bg-emerald-400' }}"></span>
+                                    @endif
+                                </a>
+                            @else
+                                <span></span>
+                            @endif
                         @endfor
+                    </div>
+
+                    <div class="mt-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Upcoming</p>
+                            <a href="{{ route('tasks.index', ['due_range' => 'week']) }}" class="text-[11px] font-semibold text-indigo-300 transition hover:text-white">View</a>
+                        </div>
+                        @forelse ($upcomingSidebarTasks as $upcomingTask)
+                            <a href="{{ route('tasks.index', ['due_date' => $upcomingTask->due_date?->toDateString()]) }}" class="block rounded-lg bg-white/5 px-3 py-2 transition hover:bg-white/10">
+                                <span class="block truncate text-xs font-semibold text-slate-100">{{ $upcomingTask->title }}</span>
+                                <span class="mt-1 block truncate text-[11px] text-slate-500">{{ $upcomingTask->project?->title }} · {{ $upcomingTask->due_date?->format('M d') }}</span>
+                            </a>
+                        @empty
+                            <p class="rounded-lg border border-dashed border-white/10 px-3 py-3 text-xs text-slate-500">No upcoming deadlines.</p>
+                        @endforelse
                     </div>
                 </div>
             </div>
