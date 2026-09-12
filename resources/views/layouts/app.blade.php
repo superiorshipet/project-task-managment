@@ -32,22 +32,22 @@
                     <div class="relative">
                         <input name="q" value="{{ request('q') }}" class="w-full rounded-lg border border-white/10 bg-white/10 px-9 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-indigo-400" placeholder="Search projects">
                         <span class="absolute left-3 top-2.5 text-slate-500">⌕</span>
-                        <span class="absolute right-3 top-2.5 text-slate-500">/</span>
+                        <span class="absolute right-3 top-2.5 text-slate-500"></span>
                     </div>
                 </form>
 
                 <nav class="space-y-1 text-sm">
                     <a href="{{ route('dashboard') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('dashboard') ? 'bg-white/10' : '' }}">
                         <span>Dashboard</span>
-                        <span class="text-slate-500">01</span>
+                        <span class="text-slate-500"></span>
                     </a>
                     <a href="{{ route('projects.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('projects.*') ? 'bg-white/10' : '' }}">
                         <span>Projects</span>
-                        <span class="text-slate-500">02</span>
+                        <span class="text-slate-500"></span>
                     </a>
                     <a href="{{ route('tasks.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('tasks.*') ? 'bg-white/10' : '' }}">
                         <span>Task Board</span>
-                        <span class="text-slate-500">03</span>
+                        <span class="text-slate-500"></span>
                     </a>
                     <a href="{{ route('notifications.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('notifications.*') ? 'bg-white/10' : '' }}">
                         <span>Notifications</span>
@@ -56,7 +56,7 @@
                     @if (auth()->user()->canManageProjects())
                         <a href="{{ route('team.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('team.*') ? 'bg-white/10' : '' }}">
                             <span>Team</span>
-                            <span class="text-slate-500">04</span>
+                            <span class="text-slate-500"></span>
                         </a>
                     @endif
                 </nav>
