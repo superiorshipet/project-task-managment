@@ -1,6 +1,6 @@
 <div x-data="{ openTaskModal: false }">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <form class="grid flex-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_180px_180px_auto]" data-live-search data-live-target="#task-board-columns" data-live-partial="1">
+        <form class="grid flex-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_180px_180px_auto]" data-live-search data-live-mode="client" data-live-target="#task-board-columns" data-live-partial="1">
             @if (!isset($project) || ! $project)
                 <select name="project_id" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                     <option value="">All projects</option>

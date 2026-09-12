@@ -110,6 +110,14 @@ function markLiveSearchIntent(form) {
     liveSearchSignatures.set(form, liveSearchUrl(form).signature);
 }
 
+function replaceHistoryFromForm(form) {
+    window.history.replaceState({}, '', liveSearchUrl(form).displayUrl);
+}
+
+function shouldUseClientOnlySearch(form) {
+    return form.dataset.liveMode === 'client';
+}
+
 function liveSearch(form) {
     const target = document.querySelector(form.dataset.liveTarget);
 
@@ -232,6 +240,11 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('input', (event) => {
             markLiveSearchIntent(form);
             applyInstantBoardFilter(form);
+            replaceHistoryFromForm(form);
+
+            if (shouldUseClientOnlySearch(form)) {
+                return;
+            }
 
             if (event.target.name === 'q' && event.target.value.trim() === '') {
                 liveSearch(form);
@@ -243,12 +256,24 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('change', () => {
             markLiveSearchIntent(form);
             applyInstantBoardFilter(form);
+            replaceHistoryFromForm(form);
+
+            if (shouldUseClientOnlySearch(form)) {
+                return;
+            }
+
             liveSearch(form);
         });
         form.addEventListener('submit', (event) => {
             event.preventDefault();
             markLiveSearchIntent(form);
             applyInstantBoardFilter(form);
+            replaceHistoryFromForm(form);
+
+            if (shouldUseClientOnlySearch(form)) {
+                return;
+            }
+
             liveSearch(form);
         });
     });
