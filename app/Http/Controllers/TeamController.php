@@ -29,15 +29,21 @@ class TeamController extends Controller
 
         $users = User::query()
             ->when(! $request->user()->isAdmin(), function ($query) use ($request): void {
-                $query->whereHas('assignedTasks.project', fn ($projects) => $projects->where('projects.user_id', $request->user()->id));
+                $query->where(fn ($users) => $users
+                    ->whereHas('assignedTasks.project', fn ($projects) => $projects->where('projects.user_id', $request->user()->id))
+                    ->orWhereHas('collaborativeTasks.project', fn ($projects) => $projects->where('projects.user_id', $request->user()->id)));
             })
             ->when($request->user()->isAdmin() && $request->filled('role'), fn ($query) => $query->where('role', $request->string('role')->toString()))
             ->when($keyword !== '', fn ($query) => $query->where(function ($query) use ($keyword): void {
                 $query->where('name', 'like', $keyword.'%')
                     ->orWhere('email', 'like', $keyword.'%');
             }))
-            ->when($projectId, fn ($query) => $query->whereHas('assignedTasks', fn ($tasks) => $tasks->where('project_id', $projectId)))
-            ->when($status, fn ($query) => $query->whereHas('assignedTasks', fn ($tasks) => $tasks->where('status', $status)))
+            ->when($projectId, fn ($query) => $query->where(fn ($users) => $users
+                ->whereHas('assignedTasks', fn ($tasks) => $tasks->where('project_id', $projectId))
+                ->orWhereHas('collaborativeTasks', fn ($tasks) => $tasks->where('project_id', $projectId))))
+            ->when($status, fn ($query) => $query->where(fn ($users) => $users
+                ->whereHas('assignedTasks', fn ($tasks) => $tasks->where('status', $status))
+                ->orWhereHas('collaborativeTasks', fn ($tasks) => $tasks->where('status', $status))))
             ->withCount([
                 'assignedTasks as total_tasks_count' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request),
                 'assignedTasks as todo_tasks_count' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request)->where('status', 'todo'),
@@ -49,11 +55,30 @@ class TeamController extends Controller
                 ->when($projectId, fn ($tasks) => $tasks->where('project_id', $projectId))
                 ->when($status, fn ($tasks) => $tasks->where('status', $status))
                 ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
+                ->orderBy('due_date'),
+                'collaborativeTasks' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request)
+                ->with(['project:id,title,user_id'])
+                ->when($projectId, fn ($tasks) => $tasks->where('project_id', $projectId))
+                ->when($status, fn ($tasks) => $tasks->where('status', $status))
+                ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
                 ->orderBy('due_date')])
             ->orderBy('role')
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
+
+        $users->getCollection()->each(function (User $member): void {
+            $tasks = $member->assignedTasks
+                ->merge($member->collaborativeTasks)
+                ->unique('id')
+                ->values();
+
+            $member->setRelation('workspaceTasks', $tasks);
+            $member->setAttribute('total_tasks_count', $tasks->count());
+            $member->setAttribute('todo_tasks_count', $tasks->where('status', 'todo')->count());
+            $member->setAttribute('in_progress_tasks_count', $tasks->where('status', 'in_progress')->count());
+            $member->setAttribute('completed_tasks_count', $tasks->where('status', 'completed')->count());
+        });
 
         return view('team.index', [
             'users' => $users,
@@ -70,6 +95,12 @@ class TeamController extends Controller
             ->where('project_id', $project->id)
             ->where('assigned_to', $user->id)
             ->update(['assigned_to' => null]);
+        $projectTaskIds = Task::query()->where('project_id', $project->id)->pluck('id');
+
+        DB::table('task_assignees')
+            ->whereIn('task_id', $projectTaskIds)
+            ->where('user_id', $user->id)
+            ->delete();
         $project->members()->detach($user->id);
 
         Cache::increment('tasks.board.version');

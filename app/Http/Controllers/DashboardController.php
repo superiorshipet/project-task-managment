@@ -32,7 +32,7 @@ class DashboardController extends Controller
         return view('dashboard.index', [
             ...$stats,
             'recentProjects' => Project::query()->visibleTo($user)->withCount('tasks')->latest()->limit(5)->get(),
-            'upcomingTasks' => Task::query()->visibleTo($user)->with(['project', 'assignee'])->whereNotNull('due_date')->orderBy('due_date')->limit(6)->get(),
+            'upcomingTasks' => Task::query()->visibleTo($user)->with(['project', 'assignee', 'assignees'])->whereNotNull('due_date')->orderBy('due_date')->limit(6)->get(),
         ]);
     }
 

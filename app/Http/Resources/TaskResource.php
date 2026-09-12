@@ -28,6 +28,11 @@ class TaskResource extends JsonResource
                 'name' => $this->assignee?->name,
                 'email' => $this->assignee?->email,
             ],
+            'assignees' => $this->whenLoaded('assignees', fn () => $this->assignees->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])->values()),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

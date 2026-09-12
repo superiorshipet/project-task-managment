@@ -60,8 +60,8 @@ function applyInstantBoardFilter(form) {
     target.querySelectorAll('[data-client-empty]').forEach((empty) => empty.remove());
 
     target.querySelectorAll('[data-task-card]').forEach((card) => {
-        const matches = (!status || card.dataset.taskStatus === status)
-            && (!assignedTo || card.dataset.taskAssignedTo === assignedTo)
+    const matches = (!status || card.dataset.taskStatus === status)
+            && (!assignedTo || String(card.dataset.taskAssignedTo || '').split(',').includes(assignedTo))
             && (!projectId || card.dataset.taskProjectId === projectId)
             && taskMatchesSearch(card, terms);
 

@@ -89,7 +89,7 @@
                     <a href="{{ route('projects.show', $task->project) }}" class="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 p-4 transition hover:bg-gray-50">
                         <div>
                             <p class="font-semibold">{{ $task->title }}</p>
-                            <p class="mt-1 text-sm text-gray-500">{{ $task->project->title }} · {{ $task->assignee?->name ?? 'Unassigned' }}</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ $task->project->title }} · {{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
                         </div>
                         <span class="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">{{ $task->due_date?->format('M d') }}</span>
                     </a>

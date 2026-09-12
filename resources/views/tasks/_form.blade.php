@@ -1,4 +1,11 @@
 @csrf
+@php
+    $selectedAssignees = collect(old('assigned_users', isset($task)
+        ? $task->assignees->pluck('id')->when($task->assigned_to, fn ($ids) => $ids->push($task->assigned_to))->unique()->values()->all()
+        : []))
+        ->map(fn ($id) => (int) $id)
+        ->all();
+@endphp
 <div class="grid gap-5">
     <div class="grid gap-5 md:grid-cols-2">
         <div>
@@ -10,13 +17,13 @@
             </select>
         </div>
         <div>
-            <label class="text-sm font-semibold text-gray-700">Assignee</label>
-            <select name="assigned_to" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400">
-                <option value="">Unassigned</option>
+            <label class="text-sm font-semibold text-gray-700">Assignees</label>
+            <select name="assigned_users[]" multiple size="4" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400">
                 @foreach ($users as $user)
-                    <option value="{{ $user->id }}" @selected((int) old('assigned_to', $task->assigned_to ?? 0) === $user->id)>{{ $user->name }}</option>
+                    <option value="{{ $user->id }}" @selected(in_array($user->id, $selectedAssignees, true))>{{ $user->name }}</option>
                 @endforeach
             </select>
+            <p class="mt-2 text-xs font-medium text-gray-500">Hold Ctrl/Cmd to select multiple people.</p>
         </div>
     </div>
 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
@@ -50,6 +51,11 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'task_assignees')->withTimestamps();
+    }
+
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
         return FastSearch::apply($query, $keyword);
@@ -69,6 +75,7 @@ class Task extends Model
             }
 
             $query->where('assigned_to', $user->id)
+                ->orWhereHas('assignees', fn (Builder $assignees) => $assignees->whereKey($user->id))
                 ->orWhereHas('project.members', fn (Builder $members) => $members->whereKey($user->id));
         });
     }

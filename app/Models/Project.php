@@ -70,7 +70,9 @@ class Project extends Model
                 return;
             }
 
-            $query->whereHas('tasks', fn (Builder $tasks) => $tasks->where('assigned_to', $user->id))
+            $query->whereHas('tasks', fn (Builder $tasks) => $tasks
+                ->where('assigned_to', $user->id)
+                ->orWhereHas('assignees', fn (Builder $assignees) => $assignees->whereKey($user->id)))
                 ->orWhereHas('members', fn (Builder $members) => $members->whereKey($user->id));
         });
     }

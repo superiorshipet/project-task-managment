@@ -94,7 +94,7 @@
                         <span class="text-sm font-semibold text-gray-500">{{ $task->due_date?->format('d M Y') ?? 'No due date' }}</span>
                         <div>
                             <p class="font-semibold">{{ $task->title }}</p>
-                            <p class="text-sm text-gray-500">{{ $task->assignee?->name ?? 'Unassigned' }}</p>
+                            <p class="text-sm text-gray-500">{{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
                         </div>
                         <span class="rounded-full bg-gray-100 px-3 py-1 text-center text-xs font-semibold text-gray-600">{{ str($task->status)->replace('_', ' ')->title() }}</span>
                     </div>
@@ -107,7 +107,7 @@
                 @forelse ($projectFiles as $task)
                     <a href="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" target="_blank" class="rounded-xl border border-gray-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
                         <p class="font-semibold">{{ basename($task->attachment) }}</p>
-                        <p class="mt-1 text-sm text-gray-500">{{ $task->title }} · {{ $task->assignee?->name ?? 'Unassigned' }}</p>
+                        <p class="mt-1 text-sm text-gray-500">{{ $task->title }} · {{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
                     </a>
                 @empty
                     <p class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 md:col-span-2 xl:col-span-3">No files uploaded yet.</p>

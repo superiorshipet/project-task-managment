@@ -17,7 +17,7 @@ class TaskApiController extends Controller
 
         $tasks = Task::query()
             ->visibleTo($request->user())
-            ->with(['project', 'assignee'])
+            ->with(['project', 'assignee', 'assignees'])
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
@@ -36,6 +36,6 @@ class TaskApiController extends Controller
             'progress' => $status === 'completed' ? 100 : $task->progress,
         ]);
 
-        return TaskResource::make($task->refresh()->load(['project', 'assignee']));
+        return TaskResource::make($task->refresh()->load(['project', 'assignee', 'assignees']));
     }
 }

@@ -4,6 +4,11 @@
         'medium' => 'bg-amber-50 text-amber-700',
         'high' => 'bg-rose-50 text-rose-700',
     ][$task->priority] ?? 'bg-gray-100 text-gray-700';
+    $taskAssignees = $task->relationLoaded('assignees') && $task->assignees->isNotEmpty()
+        ? $task->assignees
+        : collect([$task->assignee])->filter();
+    $taskAssigneeIds = $taskAssignees->pluck('id')->when($task->assigned_to, fn ($ids) => $ids->push($task->assigned_to))->unique()->values();
+    $taskAssigneeNames = $taskAssignees->pluck('name')->filter()->implode(' ');
 @endphp
 
 <article
@@ -13,8 +18,8 @@
     data-task-id="{{ $task->id }}"
     data-task-status="{{ $task->status }}"
     data-task-project-id="{{ $task->project_id }}"
-    data-task-assigned-to="{{ $task->assigned_to }}"
-    data-task-search="{{ str($task->title.' '.$task->description.' '.$task->priority.' '.$task->status.' '.$task->project?->title.' '.$task->assignee?->name)->lower() }}"
+    data-task-assigned-to="{{ $taskAssigneeIds->implode(',') }}"
+    data-task-search="{{ str($task->title.' '.$task->description.' '.$task->priority.' '.$task->status.' '.$task->project?->title.' '.$taskAssigneeNames)->lower() }}"
     draggable="true"
 >
     @if ($task->attachment && str($task->attachment)->endsWith(['jpg', 'jpeg', 'png', 'webp']))
@@ -68,11 +73,24 @@
     </div>
 
     <div class="mt-4 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <div class="grid size-8 place-items-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                {{ str($task->assignee?->name ?? 'NA')->substr(0, 2)->upper() }}
+        <div class="flex min-w-0 items-center gap-2">
+            <div class="flex -space-x-2">
+                @forelse ($taskAssignees->take(3) as $assignee)
+                    <div class="grid size-8 place-items-center rounded-full border-2 border-white bg-slate-900 text-xs font-bold text-white" title="{{ $assignee->name }}">
+                        {{ str($assignee->name)->substr(0, 2)->upper() }}
+                    </div>
+                @empty
+                    <div class="grid size-8 place-items-center rounded-full border-2 border-white bg-slate-200 text-xs font-bold text-slate-500">
+                        NA
+                    </div>
+                @endforelse
+                @if ($taskAssignees->count() > 3)
+                    <div class="grid size-8 place-items-center rounded-full border-2 border-white bg-indigo-50 text-[10px] font-bold text-indigo-600">
+                        +{{ $taskAssignees->count() - 3 }}
+                    </div>
+                @endif
             </div>
-            <span class="max-w-24 truncate text-xs font-medium text-gray-500">{{ $task->assignee?->name ?? 'Unassigned' }}</span>
+            <span class="max-w-32 truncate text-xs font-medium text-gray-500">{{ $taskAssignees->pluck('name')->filter()->implode(', ') ?: 'Unassigned' }}</span>
         </div>
     </div>
 

@@ -49,6 +49,11 @@ class User extends Authenticatable
         return $this->hasMany(Task::class, 'assigned_to');
     }
 
+    public function collaborativeTasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'task_assignees')->withTimestamps();
+    }
+
     public function favoriteProjects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_favorites')->withTimestamps();
@@ -101,11 +106,19 @@ class User extends Authenticatable
                 return true;
             }
 
-            return $project->tasks()->where('assigned_to', $this->id)->exists();
+            return $project->tasks()
+                ->where(fn ($tasks) => $tasks
+                    ->where('assigned_to', $this->id)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($this->id)))
+                ->exists();
         }
 
         return $project->members()->whereKey($this->id)->exists()
-            || $project->tasks()->where('assigned_to', $this->id)->exists();
+            || $project->tasks()
+                ->where(fn ($tasks) => $tasks
+                    ->where('assigned_to', $this->id)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($this->id)))
+                ->exists();
     }
 
     /**

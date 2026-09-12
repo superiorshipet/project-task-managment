@@ -29,7 +29,9 @@ class TaskController extends Controller
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
-            ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
+            ->when($request->filled('assigned_to'), fn ($query) => $query->where(fn ($tasks) => $tasks
+                ->where('assigned_to', $request->integer('assigned_to'))
+                ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($request->integer('assigned_to')))))
             ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
             ->orderBy('due_date');
 
@@ -55,6 +57,9 @@ class TaskController extends Controller
         $this->authorize('update', $project);
 
         $data = $request->validated();
+        $assignedUserIds = $this->assignedUserIds($request);
+        $data['assigned_to'] = $assignedUserIds[0] ?? null;
+        unset($data['assigned_users']);
         $data['progress'] = $this->progressFor($data['status'], (int) ($data['progress'] ?? 0));
 
         if ($request->hasFile('attachment')) {
@@ -62,8 +67,10 @@ class TaskController extends Controller
         }
 
         $task = Task::create($data);
+        $this->syncTaskAssignees($task, $assignedUserIds);
         $this->touchTaskBoardCaches($task->project_id);
-        $this->sendAssignmentEmail($task);
+        $task->load(['assignees', 'assignee', 'project']);
+        $this->sendAssignmentEmails($task, $task->assignees);
         WorkspaceNotifier::taskAssigned($task);
 
         return back()->with('status', 'Task created successfully.');
@@ -74,7 +81,7 @@ class TaskController extends Controller
         $this->authorize('update', $task);
 
         return view('tasks.edit', [
-            'task' => $task->load(['project', 'assignee']),
+            'task' => $task->load(['project', 'assignee', 'assignees']),
             'projects' => Project::query()->visibleTo(request()->user())->select(['id', 'title', 'user_id'])->orderBy('title')->get(),
             'users' => WorkspaceLookups::users(),
         ]);
@@ -89,6 +96,10 @@ class TaskController extends Controller
         }
 
         $data = $request->validated();
+        $assignedUserIds = $this->assignedUserIds($request);
+        $oldAssignedUserIds = $task->assignees()->pluck('users.id')->push($task->assigned_to)->filter()->unique()->values()->all();
+        $data['assigned_to'] = $assignedUserIds[0] ?? null;
+        unset($data['assigned_users']);
         $data['progress'] = $this->progressFor($data['status'], (int) ($data['progress'] ?? $task->progress));
 
         if ($request->hasFile('attachment')) {
@@ -99,19 +110,23 @@ class TaskController extends Controller
             $data['attachment'] = $request->file('attachment')->store('tasks/attachments', config('filesystems.default'));
         }
 
-        $oldAssignee = $task->assigned_to;
         $oldProjectId = $task->project_id;
 
         $task->update($data);
+        $this->syncTaskAssignees($task, $assignedUserIds);
         $this->touchTaskBoardCaches($task->project_id);
 
         if ($oldProjectId !== $task->project_id) {
             $this->touchTaskBoardCaches($oldProjectId);
         }
 
-        if ($task->assigned_to && $task->assigned_to !== $oldAssignee) {
-            $this->sendAssignmentEmail($task);
-            WorkspaceNotifier::taskAssigned($task);
+        $newAssignedUserIds = collect($assignedUserIds)->diff($oldAssignedUserIds)->values();
+
+        if ($newAssignedUserIds->isNotEmpty()) {
+            $newUsers = \App\Models\User::query()->whereIn('id', $newAssignedUserIds)->get();
+            $task->loadMissing('project');
+            $this->sendAssignmentEmails($task, $newUsers);
+            WorkspaceNotifier::taskAssignedTo($task, $newUsers);
         }
 
         return redirect()->route('projects.show', $task->project)->with('status', 'Task updated successfully.');
@@ -175,15 +190,37 @@ class TaskController extends Controller
         };
     }
 
-    private function sendAssignmentEmail(Task $task): void
+    private function assignedUserIds(Request $request): array
     {
-        $task->loadMissing(['assignee', 'project']);
+        $ids = collect($request->input('assigned_users', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
 
-        if (! $task->assignee?->email) {
-            return;
+        if ($ids->isEmpty() && $request->filled('assigned_to')) {
+            $ids->push($request->integer('assigned_to'));
         }
 
-        Mail::to($task->assignee->email)->send(new TaskAssignedMail($task));
+        return $ids->unique()->values()->all();
+    }
+
+    private function syncTaskAssignees(Task $task, array $userIds): void
+    {
+        $task->assignees()->sync($userIds);
+        $task->project->members()->syncWithoutDetaching($userIds);
+    }
+
+    private function sendAssignmentEmails(Task $task, iterable $users): void
+    {
+        $task->loadMissing('project');
+
+        foreach (collect($users)->unique('id') as $user) {
+            if (! $user->email) {
+                continue;
+            }
+
+            Mail::to($user->email)->send(new TaskAssignedMail($task, $user));
+        }
     }
 
     private function cachedTaskBoard($query, Request $request)
@@ -210,7 +247,7 @@ class TaskController extends Controller
 
         return Task::query()
             ->whereIn('id', $ids)
-            ->with(['project:id,title,user_id', 'assignee:id,name,email,role'])
+            ->with(['project:id,title,user_id', 'assignee:id,name,email,role', 'assignees:id,name,email,role'])
             ->get()
             ->sortBy(fn (Task $task) => $positions[$task->id] ?? PHP_INT_MAX)
             ->values()

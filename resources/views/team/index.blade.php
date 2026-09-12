@@ -77,7 +77,7 @@
                     </div>
 
                     <div class="divide-y divide-gray-100">
-                        @forelse ($member->assignedTasks as $task)
+                        @forelse ($member->workspaceTasks as $task)
                             <div class="grid grid-cols-[1.2fr_1fr_120px_120px_160px] items-center gap-3 px-4 py-3 text-sm">
                                 <div>
                                     <p class="font-semibold text-gray-950">{{ $task->title }}</p>

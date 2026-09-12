@@ -81,7 +81,9 @@ class ProjectController extends Controller
             ->visibleTo($request->user())
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
-            ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
+            ->when($request->filled('assigned_to'), fn ($query) => $query->where(fn ($tasks) => $tasks
+                ->where('assigned_to', $request->integer('assigned_to'))
+                ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($request->integer('assigned_to')))))
             ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
             ->orderBy('due_date');
 
@@ -100,8 +102,8 @@ class ProjectController extends Controller
             'users' => $users,
             'statuses' => Task::STATUSES,
             'activeTab' => $request->string('tab')->toString() ?: 'board',
-            'timelineTasks' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->with('assignee:id,name,email,role')->orderBy('due_date')->get(),
-            'projectFiles' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->whereNotNull('attachment')->with('assignee:id,name,email,role')->latest()->get(),
+            'timelineTasks' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->with(['assignee:id,name,email,role', 'assignees:id,name,email,role'])->orderBy('due_date')->get(),
+            'projectFiles' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->whereNotNull('attachment')->with(['assignee:id,name,email,role', 'assignees:id,name,email,role'])->latest()->get(),
             'mentions' => WorkspaceNotification::query()->visibleTo($request->user())->where('project_id', $project->id)->latest()->limit(20)->get(),
         ]);
     }
@@ -183,7 +185,7 @@ class ProjectController extends Controller
 
         return Task::query()
             ->whereIn('id', $ids)
-            ->with(['assignee:id,name,email,role', 'project:id,title,user_id'])
+            ->with(['assignee:id,name,email,role', 'assignees:id,name,email,role', 'project:id,title,user_id'])
             ->get()
             ->sortBy(fn (Task $task) => $positions[$task->id] ?? PHP_INT_MAX)
             ->values()

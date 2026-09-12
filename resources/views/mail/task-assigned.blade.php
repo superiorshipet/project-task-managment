@@ -1,4 +1,4 @@
-<p>Hello {{ $task->assignee?->name }},</p>
+<p>Hello {{ $recipient->name }},</p>
 
 <p>You have been assigned a new task in {{ config('app.name') }}.</p>
 

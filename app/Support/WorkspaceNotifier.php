@@ -10,20 +10,32 @@ class WorkspaceNotifier
 {
     public static function taskAssigned(Task $task): void
     {
-        $task->loadMissing(['assignee', 'project']);
+        $task->loadMissing(['assignee', 'assignees', 'project']);
 
-        if (! $task->assignee) {
-            return;
+        $recipients = $task->assignees
+            ->when($task->assignee, fn ($users) => $users->push($task->assignee))
+            ->unique('id');
+
+        foreach ($recipients as $recipient) {
+            self::create($recipient, $task, 'task_assigned', 'New task assigned', "{$task->title} was assigned to you in {$task->project->title}.");
         }
+    }
 
-        self::create($task->assignee, $task, 'task_assigned', 'New task assigned', "{$task->title} was assigned to you in {$task->project->title}.");
+    public static function taskAssignedTo(Task $task, iterable $users): void
+    {
+        $task->loadMissing('project');
+
+        foreach (collect($users)->unique('id') as $recipient) {
+            self::create($recipient, $task, 'task_assigned', 'New task assigned', "{$task->title} was assigned to you in {$task->project->title}.");
+        }
     }
 
     public static function taskStatusChanged(Task $task, User $actor, string $previousStatus): void
     {
-        $task->loadMissing(['assignee', 'project.owner', 'project']);
+        $task->loadMissing(['assignee', 'assignees', 'project.owner', 'project']);
 
         $recipients = collect([$task->assignee, $task->project->owner])
+            ->merge($task->assignees)
             ->filter()
             ->reject(fn (User $user) => $user->is($actor))
             ->unique('id');
