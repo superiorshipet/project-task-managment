@@ -18,12 +18,21 @@
         </div>
         <div>
             <label class="text-sm font-semibold text-gray-700">Assignees</label>
-            <select name="assigned_users[]" multiple size="4" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400">
+            <div class="mt-2 grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2">
                 @foreach ($users as $user)
-                    <option value="{{ $user->id }}" @selected(in_array($user->id, $selectedAssignees, true))>{{ $user->name }}</option>
+                    <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-indigo-50">
+                        <input
+                            type="checkbox"
+                            name="assigned_users[]"
+                            value="{{ $user->id }}"
+                            @checked(in_array($user->id, $selectedAssignees, true))
+                            class="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        >
+                        <span class="grid size-7 place-items-center rounded-full bg-slate-950 text-[10px] font-bold text-white">{{ str($user->name)->substr(0, 2)->upper() }}</span>
+                        <span class="min-w-0 truncate font-medium text-gray-700">{{ $user->name }}</span>
+                    </label>
                 @endforeach
-            </select>
-            <p class="mt-2 text-xs font-medium text-gray-500">Hold Ctrl/Cmd to select multiple people.</p>
+            </div>
         </div>
     </div>
 
