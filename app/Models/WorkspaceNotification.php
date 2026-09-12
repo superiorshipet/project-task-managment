@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\WorkspaceNotificationCreated;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -53,5 +54,15 @@ class WorkspaceNotification extends Model
     public function scopeUnread(Builder $query): Builder
     {
         return $query->whereNull('read_at');
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (WorkspaceNotification $notification): void {
+            rescue(fn () => broadcast(new WorkspaceNotificationCreated(
+                $notification,
+                static::query()->where('user_id', $notification->user_id)->unread()->count(),
+            )), report: false);
+        });
     }
 }

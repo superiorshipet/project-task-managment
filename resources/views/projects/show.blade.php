@@ -162,7 +162,7 @@
                     })->values();
                 @endphp
 
-                <form method="POST" action="{{ route('projects.messages.store', $project) }}" class="space-y-3" data-mention-chat data-chat-feed-url="{{ route('projects.messages.index', $project) }}" data-mention-users='@json($mentionSuggestions)'>
+                <form method="POST" action="{{ route('projects.messages.store', $project) }}" class="space-y-3" data-mention-chat data-chat-project-id="{{ $project->id }}" data-chat-feed-url="{{ route('projects.messages.index', $project) }}" data-mention-users='@json($mentionSuggestions)'>
                     @csrf
                     <div class="relative">
                         <textarea name="body" rows="4" required maxlength="3000" data-mention-input class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-400" placeholder="Write a message... try {{ '@'.Str::of($mentionableUsers->first()?->name ?? 'teammate')->lower()->replace(' ', '.') }}"></textarea>
@@ -192,6 +192,7 @@
             let matches = [];
             let token = null;
             let sending = false;
+            let fetchingMessages = false;
 
             function escapeHtml(value) {
                 return String(value || '').replace(/[&<>"']/g, (char) => ({
@@ -322,19 +323,26 @@
             }
 
             async function fetchMessages() {
-                if (!messages || !chat.dataset.chatFeedUrl) return;
+                if (!messages || !chat.dataset.chatFeedUrl || fetchingMessages) return;
 
-                const url = new URL(chat.dataset.chatFeedUrl, window.location.origin);
-                url.searchParams.set('after_id', messages.dataset.lastMessageId || '0');
+                fetchingMessages = true;
 
-                const response = await fetch(url, {
-                    headers: { Accept: 'application/json' },
-                });
+                try {
+                    const url = new URL(chat.dataset.chatFeedUrl, window.location.origin);
+                    url.searchParams.set('after_id', messages.dataset.lastMessageId || '0');
+                    url.searchParams.set('_', Date.now());
 
-                if (!response.ok) return;
+                    const response = await fetch(url, {
+                        headers: { Accept: 'application/json' },
+                    });
 
-                const payload = await response.json();
-                (payload.messages || []).forEach((message) => appendMessage(message));
+                    if (!response.ok) return;
+
+                    const payload = await response.json();
+                    (payload.messages || []).forEach((message) => appendMessage(message));
+                } finally {
+                    fetchingMessages = false;
+                }
             }
 
             input.addEventListener('input', () => {
@@ -420,6 +428,7 @@
                             Accept: 'application/json',
                             'X-CSRF-TOKEN': tokenInput?.value || '',
                             'X-Requested-With': 'XMLHttpRequest',
+                            'X-Socket-ID': window.Echo?.socketId?.() || '',
                         },
                         body: formData,
                     });
@@ -444,7 +453,13 @@
             });
 
             scrollChatToBottom();
-            setInterval(() => fetchMessages().catch(console.error), 1000);
+
+            if (window.Echo && chat.dataset.chatProjectId) {
+                window.Echo.private(`projects.${chat.dataset.chatProjectId}`)
+                    .listen('.project.message.sent', (event) => appendMessage(event.message));
+            } else {
+                setInterval(() => fetchMessages().catch(console.error), 300);
+            }
         })();
     </script>
 @endsection

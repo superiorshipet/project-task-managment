@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ProjectMessageSent;
 use App\Models\Project;
 use App\Models\ProjectMessage;
 use App\Models\User;
@@ -49,6 +50,8 @@ class ProjectMessageController extends Controller
             'body' => $validated['body'],
             'mentioned_user_ids' => $mentionedUsers->pluck('id')->all(),
         ])->load('user:id,name,email,role');
+
+        rescue(fn () => broadcast(new ProjectMessageSent($message))->toOthers(), report: false);
 
         foreach ($mentionedUsers as $mentionedUser) {
             WorkspaceNotification::query()->create([

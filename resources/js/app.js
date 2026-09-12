@@ -1,3 +1,5 @@
+import './echo';
+
 const liveSearchControllers = new WeakMap();
 const liveSearchSignatures = new WeakMap();
 function debounce(callback, delay = 80) {
@@ -39,6 +41,22 @@ function renderNotificationItem(notification) {
             </div>
         </div>
     `;
+}
+
+function prependNotificationItem(root, notification) {
+    const list = root.querySelector('[data-notifications-list]');
+
+    if (!list) {
+        return;
+    }
+
+    list.querySelector('[data-notifications-empty]')?.remove();
+    list.insertAdjacentHTML('afterbegin', renderNotificationItem(notification));
+
+    const items = list.children;
+    while (items.length > 5) {
+        items[items.length - 1].remove();
+    }
 }
 
 function setNotificationCount(count) {
@@ -87,7 +105,7 @@ async function refreshNotifications(root) {
     }
 
     if (!payload.notifications?.length) {
-        list.innerHTML = '<p class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">No notifications yet.</p>';
+        list.innerHTML = '<p data-notifications-empty class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">No notifications yet.</p>';
         return;
     }
 
@@ -445,7 +463,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (notificationsRoot) {
         refreshNotifications(notificationsRoot).catch(console.error);
-        setInterval(() => refreshNotifications(notificationsRoot).catch(console.error), 2500);
+
+        if (window.Echo && notificationsRoot.dataset.userId) {
+            window.Echo.private(`users.${notificationsRoot.dataset.userId}`)
+                .listen('.workspace.notification.created', (event) => {
+                    setNotificationCount(Number(event.unread_count || 0));
+                    prependNotificationItem(notificationsRoot, event.notification);
+                });
+        } else {
+            setInterval(() => refreshNotifications(notificationsRoot).catch(console.error), 1200);
+        }
     }
 
     document.querySelectorAll('[data-live-search]').forEach((form) => {

@@ -205,7 +205,7 @@
                                 ->count();
                         @endphp
                         <div class="flex items-center gap-3">
-                            <div class="relative" x-data="{ openNotifications: false }" @click.outside="openNotifications = false" data-notifications-root data-feed-url="{{ route('notifications.feed') }}">
+                            <div class="relative" x-data="{ openNotifications: false }" @click.outside="openNotifications = false" data-notifications-root data-feed-url="{{ route('notifications.feed') }}" data-user-id="{{ auth()->id() }}">
                                 <button type="button" @click="openNotifications = ! openNotifications" class="relative grid size-10 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:bg-gray-50" aria-label="Notifications">
                                     <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
