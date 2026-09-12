@@ -148,9 +148,26 @@
                     @endforelse
                 </div>
 
-                <form method="POST" action="{{ route('projects.messages.store', $project) }}" class="space-y-3">
+                @php
+                    $mentionSuggestions = $mentionableUsers->map(function ($mentionableUser) {
+                        $handle = Str::of($mentionableUser->name)->lower()->replaceMatches('/[^a-z0-9\s._-]/', '')->squish()->replace(' ', '.')->toString();
+
+                        return [
+                            'id' => $mentionableUser->id,
+                            'name' => $mentionableUser->name,
+                            'email' => $mentionableUser->email,
+                            'handle' => $handle,
+                            'initials' => str($mentionableUser->name)->substr(0, 2)->upper()->toString(),
+                        ];
+                    })->values();
+                @endphp
+
+                <form method="POST" action="{{ route('projects.messages.store', $project) }}" class="space-y-3" data-mention-chat data-mention-users='@json($mentionSuggestions)'>
                     @csrf
-                    <textarea name="body" rows="4" required maxlength="3000" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-400" placeholder="Write a message... try {{ '@'.Str::of($mentionableUsers->first()?->name ?? 'teammate')->lower()->replace(' ', '.') }}"></textarea>
+                    <div class="relative">
+                        <textarea name="body" rows="4" required maxlength="3000" data-mention-input class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-400" placeholder="Write a message... try {{ '@'.Str::of($mentionableUsers->first()?->name ?? 'teammate')->lower()->replace(' ', '.') }}"></textarea>
+                        <div data-mention-list hidden class="absolute bottom-full left-0 z-30 mb-2 w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl"></div>
+                    </div>
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <p class="text-xs font-semibold text-gray-400">Mentions create notifications for the mentioned user.</p>
                         <button class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Send message</button>
@@ -174,4 +191,147 @@
             </aside>
         </div>
     @endif
+
+    <script>
+        (() => {
+            const chat = document.querySelector('[data-mention-chat]');
+            if (!chat) return;
+
+            const input = chat.querySelector('[data-mention-input]');
+            const list = chat.querySelector('[data-mention-list]');
+            const users = JSON.parse(chat.dataset.mentionUsers || '[]');
+            let activeIndex = 0;
+            let matches = [];
+            let token = null;
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>"']/g, (char) => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;',
+                })[char]);
+            }
+
+            function currentToken() {
+                const cursor = input.selectionStart;
+                const beforeCursor = input.value.slice(0, cursor);
+                const match = beforeCursor.match(/(^|\s)@([A-Za-z0-9._-]*)$/);
+
+                if (!match) return null;
+
+                return {
+                    start: cursor - match[2].length - 1,
+                    end: cursor,
+                    query: match[2].toLowerCase(),
+                };
+            }
+
+            function hideList() {
+                list.hidden = true;
+                list.innerHTML = '';
+                matches = [];
+                activeIndex = 0;
+                token = null;
+            }
+
+            function renderList() {
+                if (!token) {
+                    hideList();
+                    return;
+                }
+
+                matches = users
+                    .filter((user) => {
+                        const query = token.query;
+
+                        return user.handle.includes(query)
+                            || user.name.toLowerCase().includes(query)
+                            || String(user.email || '').toLowerCase().includes(query);
+                    })
+                    .slice(0, 7);
+
+                if (matches.length === 0) {
+                    hideList();
+                    return;
+                }
+
+                list.hidden = false;
+                list.innerHTML = matches.map((user, index) => `
+                    <button type="button" data-mention-option="${index}" class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition ${index === activeIndex ? 'bg-indigo-50' : 'hover:bg-gray-50'}">
+                        <span class="grid size-8 shrink-0 place-items-center rounded-full bg-slate-950 text-[10px] font-bold text-white">${escapeHtml(user.initials)}</span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-sm font-bold text-gray-950">${escapeHtml(user.name)}</span>
+                            <span class="block truncate text-xs font-semibold text-indigo-600">@${escapeHtml(user.handle)}</span>
+                        </span>
+                    </button>
+                `).join('');
+            }
+
+            function insertMention(user) {
+                if (!token || !user) return;
+
+                const before = input.value.slice(0, token.start);
+                const after = input.value.slice(token.end);
+                const mention = `@${user.handle} `;
+
+                input.value = `${before}${mention}${after}`;
+                input.focus();
+                input.selectionStart = input.selectionEnd = before.length + mention.length;
+                hideList();
+            }
+
+            input.addEventListener('input', () => {
+                token = currentToken();
+
+                if (!token) {
+                    hideList();
+                    return;
+                }
+
+                activeIndex = 0;
+                renderList();
+            });
+
+            input.addEventListener('keydown', (event) => {
+                if (list.hidden) return;
+
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    activeIndex = (activeIndex + 1) % matches.length;
+                    renderList();
+                }
+
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    activeIndex = (activeIndex - 1 + matches.length) % matches.length;
+                    renderList();
+                }
+
+                if (event.key === 'Enter' || event.key === 'Tab') {
+                    event.preventDefault();
+                    insertMention(matches[activeIndex]);
+                }
+
+                if (event.key === 'Escape') {
+                    hideList();
+                }
+            });
+
+            list.addEventListener('mousedown', (event) => {
+                const option = event.target.closest('[data-mention-option]');
+                if (!option) return;
+
+                event.preventDefault();
+                insertMention(matches[Number(option.dataset.mentionOption)]);
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!chat.contains(event.target)) {
+                    hideList();
+                }
+            });
+        })();
+    </script>
 @endsection
