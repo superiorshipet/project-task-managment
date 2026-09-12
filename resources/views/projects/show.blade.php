@@ -422,14 +422,20 @@
                 formData.set('body', body);
 
                 try {
+                    const headers = {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': tokenInput?.value || '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    };
+                    const socketId = window.Echo?.socketId?.();
+
+                    if (socketId) {
+                        headers['X-Socket-ID'] = socketId;
+                    }
+
                     const response = await fetch(chat.action, {
                         method: 'POST',
-                        headers: {
-                            Accept: 'application/json',
-                            'X-CSRF-TOKEN': tokenInput?.value || '',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-Socket-ID': window.Echo?.socketId?.() || '',
-                        },
+                        headers,
                         body: formData,
                     });
 
@@ -457,9 +463,9 @@
             if (window.Echo && chat.dataset.chatProjectId) {
                 window.Echo.private(`projects.${chat.dataset.chatProjectId}`)
                     .listen('.project.message.sent', (event) => appendMessage(event.message));
-            } else {
-                setInterval(() => fetchMessages().catch(console.error), 300);
             }
+
+            setInterval(() => fetchMessages().catch(console.error), 1000);
         })();
     </script>
 @endsection

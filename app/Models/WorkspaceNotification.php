@@ -59,7 +59,7 @@ class WorkspaceNotification extends Model
     protected static function booted(): void
     {
         static::created(function (WorkspaceNotification $notification): void {
-            rescue(fn () => broadcast(new WorkspaceNotificationCreated(
+            rescue(fn () => event(new WorkspaceNotificationCreated(
                 $notification,
                 static::query()->where('user_id', $notification->user_id)->unread()->count(),
             )), report: false);

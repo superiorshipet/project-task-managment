@@ -51,7 +51,7 @@ class ProjectMessageController extends Controller
             'mentioned_user_ids' => $mentionedUsers->pluck('id')->all(),
         ])->load('user:id,name,email,role');
 
-        rescue(fn () => broadcast(new ProjectMessageSent($message))->toOthers(), report: false);
+        rescue(fn () => event(new ProjectMessageSent($message)), report: false);
 
         foreach ($mentionedUsers as $mentionedUser) {
             WorkspaceNotification::query()->create([
