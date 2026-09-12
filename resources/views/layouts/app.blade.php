@@ -58,7 +58,7 @@
                     </div>
                     <div class="space-y-1">
                         @foreach ($sidebarProjects as $sidebarProject)
-                            <a href="{{ route('projects.show', $sidebarProject) }}" class="block truncate rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">
+                            <a href="{{ route('projects.show', $sidebarProject) }}" data-prefetch class="block truncate rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">
                                 <span class="mr-2 inline-block size-2 rounded-full bg-emerald-400"></span>{{ $sidebarProject->title }}
                             </a>
                         @endforeach

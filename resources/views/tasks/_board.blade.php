@@ -1,6 +1,6 @@
 <div x-data="{ openTaskModal: false }">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <form class="grid flex-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_180px_180px_auto]">
+        <form class="grid flex-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_180px_180px_auto]" data-live-search data-live-target="#task-board-columns" data-live-partial="1">
             @if (!isset($project) || ! $project)
                 <select name="project_id" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                     <option value="">All projects</option>
@@ -30,30 +30,8 @@
         @endcan
     </div>
 
-    <div class="grid gap-5 xl:grid-cols-3">
-        @foreach (['pending' => ['To Do', 'bg-rose-400'], 'in_progress' => ['In Progress', 'bg-amber-400'], 'completed' => ['Completed', 'bg-emerald-400']] as $status => [$label, $dot])
-            @php($columnTasks = $tasksByStatus->get($status, collect()))
-            <section class="min-h-[620px] rounded-2xl border border-gray-200 bg-gray-100/60 p-4">
-                <div class="mb-4 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="size-2 rounded-full {{ $dot }}"></span>
-                        <h3 class="font-semibold">{{ $label }}</h3>
-                        <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-500">{{ $columnTasks->count() }}</span>
-                    </div>
-                    @can('create', \App\Models\Task::class)
-                        <button type="button" @click="openTaskModal = true" class="grid size-8 place-items-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800">+</button>
-                    @endcan
-                </div>
-
-                <div class="space-y-4">
-                    @forelse ($columnTasks as $task)
-                        @include('tasks._card', ['task' => $task])
-                    @empty
-                        <div class="rounded-2xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-sm text-gray-500">No tasks here.</div>
-                    @endforelse
-                </div>
-            </section>
-        @endforeach
+    <div id="task-board-columns">
+        @include('tasks._columns', ['tasksByStatus' => $tasksByStatus])
     </div>
 
     @can('create', \App\Models\Task::class)

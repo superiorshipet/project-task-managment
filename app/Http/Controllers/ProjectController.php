@@ -9,6 +9,7 @@ use App\Models\Task;
 use App\Support\WorkspaceLookups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -30,6 +31,10 @@ class ProjectController extends Controller
             ->latest()
             ->paginate(12)
             ->withQueryString();
+
+        if ($request->boolean('partial')) {
+            return view('projects._grid', compact('projects'));
+        }
 
         return view('projects.index', compact('projects'));
     }
@@ -67,17 +72,22 @@ class ProjectController extends Controller
 
         $users = WorkspaceLookups::users();
 
-        $tasks = Task::query()
+        $tasksQuery = Task::query()
             ->where('project_id', $project->id)
             ->visibleTo($request->user())
-            ->with(['assignee:id,name,email,role', 'project:id,title,user_id'])
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
             ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'completed')")
-            ->orderBy('due_date')
-            ->get()
-            ->groupBy('status');
+            ->orderBy('due_date');
+
+        $tasks = $this->cachedTaskBoard($tasksQuery, $request, $project->id);
+
+        if ($request->boolean('partial')) {
+            return view('tasks._columns', [
+                'tasksByStatus' => $tasks,
+            ]);
+        }
 
         return view('projects.show', [
             'project' => $project->load(['owner:id,name,email,role']),
@@ -113,6 +123,7 @@ class ProjectController extends Controller
         }
 
         $project->update($data);
+        Cache::increment("project.board.version.{$project->id}");
 
         return redirect()->route('projects.show', $project)->with('status', 'Project updated successfully.');
     }
@@ -122,6 +133,7 @@ class ProjectController extends Controller
         $this->authorize('delete', $project);
 
         $project->delete();
+        Cache::increment("project.board.version.{$project->id}");
 
         return redirect()->route('projects.index')->with('status', 'Project moved to archive.');
     }
@@ -132,7 +144,37 @@ class ProjectController extends Controller
         $this->authorize('restore', $project);
 
         $project->restore();
+        Cache::increment("project.board.version.{$project->id}");
 
         return redirect()->route('projects.show', $project)->with('status', 'Project restored successfully.');
+    }
+
+    private function cachedTaskBoard($query, Request $request, int $projectId)
+    {
+        $version = Cache::get("project.board.version.{$projectId}", 1);
+        $filters = $request->only(['q', 'status', 'assigned_to']);
+        $key = 'project.board.ids.'.md5(json_encode([
+            'project_id' => $projectId,
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->role,
+            'version' => $version,
+            'filters' => $filters,
+        ]));
+
+        $ids = Cache::remember($key, now()->addSeconds(30), fn () => (clone $query)->pluck('id')->all());
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        $positions = array_flip($ids);
+
+        return Task::query()
+            ->whereIn('id', $ids)
+            ->with(['assignee:id,name,email,role', 'project:id,title,user_id'])
+            ->get()
+            ->sortBy(fn (Task $task) => $positions[$task->id] ?? PHP_INT_MAX)
+            ->values()
+            ->groupBy('status');
     }
 }

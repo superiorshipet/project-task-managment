@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Support\WorkspaceLookups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -21,17 +22,22 @@ class TaskController extends Controller
     {
         $this->authorize('viewAny', Task::class);
 
-        $tasks = Task::query()
+        $tasksQuery = Task::query()
             ->visibleTo($request->user())
-            ->with(['project:id,title,user_id', 'assignee:id,name,email,role'])
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
             ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
             ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'completed')")
-            ->orderBy('due_date')
-            ->get()
-            ->groupBy('status');
+            ->orderBy('due_date');
+
+        $tasks = $this->cachedTaskBoard($tasksQuery, $request);
+
+        if ($request->boolean('partial')) {
+            return view('tasks._columns', [
+                'tasksByStatus' => $tasks,
+            ]);
+        }
 
         return view('tasks.index', [
             'tasksByStatus' => $tasks,
@@ -54,6 +60,7 @@ class TaskController extends Controller
         }
 
         $task = Task::create($data);
+        $this->touchTaskBoardCaches($task->project_id);
         $this->sendAssignmentEmail($task);
 
         return back()->with('status', 'Task created successfully.');
@@ -90,8 +97,14 @@ class TaskController extends Controller
         }
 
         $oldAssignee = $task->assigned_to;
+        $oldProjectId = $task->project_id;
 
         $task->update($data);
+        $this->touchTaskBoardCaches($task->project_id);
+
+        if ($oldProjectId !== $task->project_id) {
+            $this->touchTaskBoardCaches($oldProjectId);
+        }
 
         if ($task->assigned_to && $task->assigned_to !== $oldAssignee) {
             $this->sendAssignmentEmail($task);
@@ -108,6 +121,7 @@ class TaskController extends Controller
             'status' => $status,
             'progress' => $this->progressFor($status, $task->progress),
         ]);
+        $this->touchTaskBoardCaches($task->project_id);
 
         return back()->with('status', 'Task status updated.');
     }
@@ -117,6 +131,7 @@ class TaskController extends Controller
         $this->authorize('delete', $task);
 
         $task->delete();
+        $this->touchTaskBoardCaches($task->project_id);
 
         return back()->with('status', 'Task moved to archive.');
     }
@@ -127,6 +142,7 @@ class TaskController extends Controller
         $this->authorize('restore', $task);
 
         $task->restore();
+        $this->touchTaskBoardCaches($task->project_id);
 
         return redirect()->route('projects.show', $task->project)->with('status', 'Task restored successfully.');
     }
@@ -150,5 +166,39 @@ class TaskController extends Controller
         }
 
         Mail::to($task->assignee->email)->send(new TaskAssignedMail($task));
+    }
+
+    private function cachedTaskBoard($query, Request $request)
+    {
+        $version = Cache::get('tasks.board.version', 1);
+        $filters = $request->only(['q', 'status', 'project_id', 'assigned_to']);
+        $key = 'tasks.board.ids.'.md5(json_encode([
+            'user_id' => $request->user()->id,
+            'role' => $request->user()->role,
+            'version' => $version,
+            'filters' => $filters,
+        ]));
+
+        $ids = Cache::remember($key, now()->addSeconds(30), fn () => (clone $query)->pluck('id')->all());
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        $positions = array_flip($ids);
+
+        return Task::query()
+            ->whereIn('id', $ids)
+            ->with(['project:id,title,user_id', 'assignee:id,name,email,role'])
+            ->get()
+            ->sortBy(fn (Task $task) => $positions[$task->id] ?? PHP_INT_MAX)
+            ->values()
+            ->groupBy('status');
+    }
+
+    private function touchTaskBoardCaches(int $projectId): void
+    {
+        Cache::increment('tasks.board.version');
+        Cache::increment("project.board.version.{$projectId}");
     }
 }
