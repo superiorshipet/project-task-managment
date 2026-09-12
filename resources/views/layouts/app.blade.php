@@ -134,10 +134,8 @@
                         <p class="text-sm font-semibold">Calendar</p>
                         <p class="text-xs text-slate-500">{{ $calendarMonth->format('M Y') }}</p>
                     </div>
-                    <div class="mb-4 grid grid-cols-3 gap-2 text-[11px] font-semibold">
-                        <a href="{{ route('tasks.index', ['due_range' => 'today']) }}" class="rounded-lg bg-white/10 px-2 py-1.5 text-center text-slate-200 transition hover:bg-white/15 hover:text-white">Today</a>
-                        <a href="{{ route('tasks.index', ['due_range' => 'week']) }}" class="rounded-lg bg-white/10 px-2 py-1.5 text-center text-slate-200 transition hover:bg-white/15 hover:text-white">Week</a>
-                        <a href="{{ route('tasks.index', ['due_range' => 'overdue']) }}" class="rounded-lg bg-rose-500/15 px-2 py-1.5 text-center text-rose-200 transition hover:bg-rose-500/25 hover:text-white">Overdue</a>
+                    <div class="mb-4 text-[11px] font-semibold">
+                        <a href="{{ route('tasks.index', ['due_range' => 'overdue']) }}" class="block rounded-lg bg-rose-500/15 px-2 py-1.5 text-center text-rose-200 transition hover:bg-rose-500/25 hover:text-white">Overdue tasks</a>
                     </div>
                     <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-slate-500">
                         @foreach (['M','T','W','T','F','S','S'] as $day)
