@@ -38,12 +38,16 @@ class ProjectMessageController extends Controller
             'body' => ['required', 'string', 'max:3000'],
         ]);
 
-        $project->loadMissing(['owner:id,name,email,role', 'members:id,name,email,role']);
+        $mentionedUsers = collect();
 
-        $mentionableUsers = $this->mentionableUsers($project);
-        $mentionedUsers = $this->mentionedUsers($validated['body'], $mentionableUsers)
-            ->reject(fn (User $user) => $user->is($request->user()))
-            ->values();
+        if (str_contains($validated['body'], '@')) {
+            $project->loadMissing(['owner:id,name,email,role', 'members:id,name,email,role']);
+
+            $mentionableUsers = $this->mentionableUsers($project);
+            $mentionedUsers = $this->mentionedUsers($validated['body'], $mentionableUsers)
+                ->reject(fn (User $user) => $user->is($request->user()))
+                ->values();
+        }
 
         $message = $project->messages()->create([
             'user_id' => $request->user()->id,
@@ -51,26 +55,34 @@ class ProjectMessageController extends Controller
             'mentioned_user_ids' => $mentionedUsers->pluck('id')->all(),
         ])->load('user:id,name,email,role');
 
-        rescue(fn () => event(new ProjectMessageSent($message)), report: false);
-
-        foreach ($mentionedUsers as $mentionedUser) {
-            WorkspaceNotification::query()->create([
+        $messagePayload = $this->messagePayload($message);
+        $actorName = $request->user()->name;
+        $notificationPayloads = $mentionedUsers
+            ->map(fn (User $mentionedUser) => [
                 'user_id' => $mentionedUser->id,
                 'project_id' => $project->id,
                 'type' => 'project_mention',
                 'title' => 'You were mentioned',
-                'body' => "{$request->user()->name} mentioned you in {$project->title}.",
+                'body' => "{$actorName} mentioned you in {$project->title}.",
                 'data' => [
                     'message_id' => $message->id,
                     'project_title' => $project->title,
-                    'sender_name' => $request->user()->name,
+                    'sender_name' => $actorName,
                 ],
-            ]);
-        }
+            ])
+            ->all();
+
+        defer(function () use ($message, $notificationPayloads): void {
+            rescue(fn () => event(new ProjectMessageSent($message)), report: false);
+
+            foreach ($notificationPayloads as $payload) {
+                WorkspaceNotification::query()->create($payload);
+            }
+        }, always: true);
 
         if ($request->wantsJson()) {
             return response()->json([
-                'message' => $this->messagePayload($message),
+                'message' => $messagePayload,
             ], 201);
         }
 
