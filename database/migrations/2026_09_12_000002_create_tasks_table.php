@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('status')->default('pending')->index();
+            $table->string('status')->default('todo')->index();
             $table->string('priority')->default('medium')->index();
             $table->date('due_date')->nullable()->index();
             $table->string('attachment')->nullable();

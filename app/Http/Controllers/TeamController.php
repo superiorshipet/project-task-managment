@@ -40,7 +40,7 @@ class TeamController extends Controller
             ->when($status, fn ($query) => $query->whereHas('assignedTasks', fn ($tasks) => $tasks->where('status', $status)))
             ->withCount([
                 'assignedTasks as total_tasks_count' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request),
-                'assignedTasks as pending_tasks_count' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request)->where('status', 'pending'),
+                'assignedTasks as todo_tasks_count' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request)->where('status', 'todo'),
                 'assignedTasks as in_progress_tasks_count' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request)->where('status', 'in_progress'),
                 'assignedTasks as completed_tasks_count' => fn ($tasks) => $this->scopeTasksForManager($tasks, $request)->where('status', 'completed'),
             ])
@@ -48,7 +48,7 @@ class TeamController extends Controller
                 ->with(['project:id,title,user_id'])
                 ->when($projectId, fn ($tasks) => $tasks->where('project_id', $projectId))
                 ->when($status, fn ($tasks) => $tasks->where('status', $status))
-                ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'completed')")
+                ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
                 ->orderBy('due_date')])
             ->orderBy('role')
             ->orderBy('name')

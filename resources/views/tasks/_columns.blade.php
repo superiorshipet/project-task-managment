@@ -1,5 +1,5 @@
 <div class="grid gap-5 xl:grid-cols-3">
-    @foreach (['pending' => ['To Do', 'bg-rose-400'], 'in_progress' => ['In Progress', 'bg-amber-400'], 'completed' => ['Completed', 'bg-emerald-400']] as $status => [$label, $dot])
+    @foreach (['todo' => ['To Do', 'bg-rose-400'], 'in_progress' => ['In Progress', 'bg-amber-400'], 'completed' => ['Completed', 'bg-emerald-400']] as $status => [$label, $dot])
         @php($columnTasks = $tasksByStatus->get($status, collect()))
         <section class="min-h-[620px] rounded-2xl border border-gray-200 bg-gray-100/60 p-4 transition" data-status-column="{{ $status }}">
             <div class="mb-4 flex items-center justify-between">

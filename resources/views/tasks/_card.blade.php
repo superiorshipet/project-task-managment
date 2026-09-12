@@ -67,7 +67,7 @@
     </div>
 
     <div class="mt-3 grid grid-cols-3 gap-1">
-        @foreach (['pending' => 'To Do', 'in_progress' => 'Doing', 'completed' => 'Done'] as $status => $label)
+        @foreach (['todo' => 'To Do', 'in_progress' => 'Doing', 'completed' => 'Done'] as $status => $label)
             <form method="POST" action="{{ route('tasks.status', $task) }}" data-status-form>
                 @csrf
                 @method('PATCH')

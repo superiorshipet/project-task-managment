@@ -29,7 +29,7 @@ class TaskController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
             ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
-            ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'completed')")
+            ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
             ->orderBy('due_date');
 
         $tasks = $this->cachedTaskBoard($tasksQuery, $request);
@@ -160,7 +160,7 @@ class TaskController extends Controller
     private function progressFor(string $status, int $progress): int
     {
         return match ($status) {
-            'pending' => min($progress, 20),
+            'todo' => min($progress, 20),
             'in_progress' => max(30, min($progress, 90)),
             'completed' => 100,
             default => $progress,

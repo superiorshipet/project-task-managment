@@ -78,7 +78,7 @@ class ProjectController extends Controller
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
-            ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'completed')")
+            ->orderByRaw("FIELD(status, 'todo', 'in_progress', 'completed')")
             ->orderBy('due_date');
 
         $tasks = $this->cachedTaskBoard($tasksQuery, $request, $project->id);

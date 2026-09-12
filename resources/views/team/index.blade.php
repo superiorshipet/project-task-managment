@@ -53,6 +53,7 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ str($member->role)->replace('_', ' ')->title() }}</span>
                         <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $member->total_tasks_count }} tasks</span>
+                        <span class="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">{{ $member->todo_tasks_count }} todo</span>
                         <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">{{ $member->in_progress_tasks_count }} doing</span>
                         <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{{ $member->completed_tasks_count }} done</span>
 

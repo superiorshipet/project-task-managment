@@ -8,7 +8,7 @@
     <div class="grid gap-4 md:grid-cols-4">
         @foreach ([
             ['label' => 'Total Projects', 'value' => $totalProjects, 'tone' => 'bg-indigo-50 text-indigo-700'],
-            ['label' => 'Pending Tasks', 'value' => $pendingTasks, 'tone' => 'bg-amber-50 text-amber-700'],
+            ['label' => 'To Do Tasks', 'value' => $todoTasks, 'tone' => 'bg-amber-50 text-amber-700'],
             ['label' => 'Completed Tasks', 'value' => $completedTasks, 'tone' => 'bg-emerald-50 text-emerald-700'],
             ['label' => 'Team Members', 'value' => $teamMembers, 'tone' => 'bg-slate-100 text-slate-700'],
         ] as $stat)

@@ -23,7 +23,7 @@ class DashboardController extends Controller
             now()->addMinutes(5),
             fn () => [
                 'totalProjects' => (clone $projects)->count(),
-                'pendingTasks' => (clone $tasks)->where('status', 'pending')->count(),
+                'todoTasks' => (clone $tasks)->where('status', 'todo')->count(),
                 'completedTasks' => (clone $tasks)->where('status', 'completed')->count(),
                 'teamMembers' => $this->teamMembersCount($user),
             ],

@@ -13,7 +13,7 @@ class Task extends Model
 {
     use HasFactory, SoftDeletes;
 
-    public const STATUSES = ['pending', 'in_progress', 'completed'];
+    public const STATUSES = ['todo', 'in_progress', 'completed'];
 
     public const PRIORITIES = ['low', 'medium', 'high'];
 

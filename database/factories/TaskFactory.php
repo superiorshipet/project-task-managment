@@ -25,7 +25,7 @@ class TaskFactory extends Factory
             'priority' => fake()->randomElement(Task::PRIORITIES),
             'due_date' => fake()->dateTimeBetween('now', '+45 days')->format('Y-m-d'),
             'progress' => match ($status) {
-                'pending' => fake()->numberBetween(0, 20),
+                'todo' => fake()->numberBetween(0, 20),
                 'in_progress' => fake()->numberBetween(30, 85),
                 'completed' => 100,
             },

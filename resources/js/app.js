@@ -232,13 +232,13 @@ function rollbackTaskCard(card, snapshot) {
 }
 
 function submitTaskStatusForm(form, card, nextStatus) {
-    if (!card || !nextStatus || form.dataset.pending === '1') {
+    if (!card || !nextStatus || form.dataset.busy === '1') {
         return;
     }
 
     const previousStatus = card.dataset.taskStatus;
     const snapshot = moveTaskCard(card, nextStatus);
-    form.dataset.pending = '1';
+    form.dataset.busy = '1';
 
     fetch(form.action, {
         method: 'POST',
@@ -263,7 +263,7 @@ function submitTaskStatusForm(form, card, nextStatus) {
             alert('Task status could not be updated. Please try again.');
         })
         .finally(() => {
-            delete form.dataset.pending;
+            delete form.dataset.busy;
         });
 }
 
