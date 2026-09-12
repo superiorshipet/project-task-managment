@@ -8,6 +8,7 @@
 
 <article
     class="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    x-data="{ taskMenuOpen: false }"
     data-task-card
     data-task-id="{{ $task->id }}"
     data-task-status="{{ $task->status }}"
@@ -25,9 +26,25 @@
             <h4 class="font-semibold text-gray-950">{{ $task->title }}</h4>
             <p class="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{{ $task->description ?: 'No description.' }}</p>
         </div>
-        @can('update', $task)
-            <a href="{{ route('tasks.edit', $task) }}" class="rounded-lg px-2 py-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">...</a>
-        @endcan
+        @if (auth()->user()->can('update', $task) || auth()->user()->can('delete', $task))
+            <div class="relative shrink-0" @click.outside="taskMenuOpen = false">
+                <button type="button" @click.stop="taskMenuOpen = ! taskMenuOpen" class="grid size-8 place-items-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700" aria-label="Task actions">
+                    ...
+                </button>
+                <div x-show="taskMenuOpen" x-cloak class="absolute right-0 z-30 mt-1 w-32 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 text-sm shadow-lg">
+                    @can('update', $task)
+                        <a href="{{ route('tasks.edit', $task) }}" class="block px-3 py-2 font-semibold text-gray-700 transition hover:bg-gray-50">Edit</a>
+                    @endcan
+                    @can('delete', $task)
+                        <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Delete this task?');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="block w-full px-3 py-2 text-left font-semibold text-rose-600 transition hover:bg-rose-50">Delete</button>
+                        </form>
+                    @endcan
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="mt-4">
@@ -57,13 +74,6 @@
             </div>
             <span class="max-w-24 truncate text-xs font-medium text-gray-500">{{ $task->assignee?->name ?? 'Unassigned' }}</span>
         </div>
-        @can('delete', $task)
-            <form method="POST" action="{{ route('tasks.destroy', $task) }}">
-                @csrf
-                @method('DELETE')
-                <button class="rounded-lg px-2 py-1 text-xs font-semibold text-rose-500 opacity-0 transition hover:bg-rose-50 group-hover:opacity-100">Archive</button>
-            </form>
-        @endcan
     </div>
 
     <div class="mt-3 grid grid-cols-3 gap-1">
