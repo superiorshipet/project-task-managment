@@ -69,6 +69,11 @@ class User extends Authenticatable
         return $this->hasMany(WorkspaceNotification::class);
     }
 
+    public function updatedWhiteboards(): HasMany
+    {
+        return $this->hasMany(ProjectWhiteboard::class, 'updated_by');
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;

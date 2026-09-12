@@ -43,9 +43,13 @@
                     'timeline' => ['Timeline', $timelineTasks->count()],
                     'files' => ['Files', $projectFiles->count()],
                     'mentions' => ['Mentions', $mentions->count()],
+                    'whiteboard' => ['Whiteboard', null],
                 ] as $tab => [$label, $count])
-                    <a href="{{ route('projects.show', ['project' => $project, 'tab' => $tab]) }}" class="{{ $activeTab === $tab ? 'border-slate-950 text-slate-950' : 'border-transparent text-gray-500' }} border-b-2 pb-3 transition hover:text-slate-950">
-                        {{ $label }} <span class="ml-1 rounded-full bg-gray-100 px-1.5 text-[10px]">{{ $count }}</span>
+                    <a href="{{ $tab === 'whiteboard' ? route('projects.whiteboard.show', $project) : route('projects.show', ['project' => $project, 'tab' => $tab]) }}" class="{{ $activeTab === $tab ? 'border-slate-950 text-slate-950' : 'border-transparent text-gray-500' }} border-b-2 pb-3 transition hover:text-slate-950">
+                        {{ $label }}
+                        @if ($count !== null)
+                            <span class="ml-1 rounded-full bg-gray-100 px-1.5 text-[10px]">{{ $count }}</span>
+                        @endif
                     </a>
                 @endforeach
             </nav>

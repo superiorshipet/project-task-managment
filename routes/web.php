@@ -9,6 +9,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectFavoriteController;
 use App\Http\Controllers\ProjectInvitationController;
+use App\Http\Controllers\ProjectWhiteboardController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +43,8 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/project-invitations/{invitation}/accept', [ProjectInvitationController::class, 'accept'])->name('project-invitations.accept');
 
     Route::resource('projects', ProjectController::class);
+    Route::get('/projects/{project}/whiteboard', [ProjectWhiteboardController::class, 'show'])->name('projects.whiteboard.show');
+    Route::put('/projects/{project}/whiteboard', [ProjectWhiteboardController::class, 'update'])->name('projects.whiteboard.update');
     Route::post('/projects/{project}/favorite', [ProjectFavoriteController::class, 'toggle'])->name('projects.favorite');
     Route::post('/projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
 
