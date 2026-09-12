@@ -53,16 +53,6 @@
         @endif
     </div>
 
-    <div class="mt-4">
-        <div class="mb-1 flex justify-between text-[11px] font-semibold text-gray-500">
-            <span>Progress</span>
-            <span>{{ $task->progress }}%</span>
-        </div>
-        <div class="h-1.5 overflow-hidden rounded-full bg-gray-100">
-            <div class="h-full rounded-full bg-indigo-500" style="width: {{ $task->progress }}%"></div>
-        </div>
-    </div>
-
     <div class="mt-4 flex flex-wrap items-center gap-2">
         <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $priorityClasses }}">{{ ucfirst($task->priority) }}</span>
         @if ($task->due_date)

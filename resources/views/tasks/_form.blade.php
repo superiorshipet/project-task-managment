@@ -46,7 +46,7 @@
         <textarea name="description" rows="4" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400">{{ old('description', $task->description ?? '') }}</textarea>
     </div>
 
-    <div class="grid gap-5 md:grid-cols-4">
+    <div class="grid gap-5 md:grid-cols-3">
         <div>
             <label class="text-sm font-semibold text-gray-700">Status</label>
             <select name="status" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400">
@@ -66,10 +66,6 @@
         <div>
             <label class="text-sm font-semibold text-gray-700">Due date</label>
             <input name="due_date" type="date" value="{{ old('due_date', isset($task) && $task->due_date ? $task->due_date->toDateString() : '') }}" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400">
-        </div>
-        <div>
-            <label class="text-sm font-semibold text-gray-700">Progress</label>
-            <input name="progress" type="number" min="0" max="100" value="{{ old('progress', $task->progress ?? 0) }}" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400">
         </div>
     </div>
 

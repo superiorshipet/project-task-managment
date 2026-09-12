@@ -97,7 +97,11 @@ class ProjectController extends Controller
             ]);
         }
 
-        $project = $project->load(['owner:id,name,email,role', 'members:id,name,email,role'])->loadCount('tasks');
+        $project = $project->load(['owner:id,name,email,role', 'members:id,name,email,role'])
+            ->loadCount([
+                'tasks',
+                'tasks as completed_tasks_count' => fn ($query) => $query->where('status', 'completed'),
+            ]);
         $mentionableUsers = collect([$project->owner])
             ->merge($project->members)
             ->merge(User::query()

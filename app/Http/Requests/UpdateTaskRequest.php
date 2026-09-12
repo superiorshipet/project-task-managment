@@ -27,7 +27,6 @@ class UpdateTaskRequest extends FormRequest
             'priority' => ['required', Rule::in(Task::PRIORITIES)],
             'due_date' => ['nullable', 'date'],
             'attachment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:2048'],
-            'progress' => ['nullable', 'integer', 'min:0', 'max:100'],
         ];
     }
 }

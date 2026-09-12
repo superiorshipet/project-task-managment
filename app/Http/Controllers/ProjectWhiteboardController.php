@@ -17,7 +17,10 @@ class ProjectWhiteboardController extends Controller
         $this->authorize('view', $project);
 
         $project->load(['owner:id,name,email,role', 'members:id,name,email,role'])
-            ->loadCount('tasks');
+            ->loadCount([
+                'tasks',
+                'tasks as completed_tasks_count' => fn ($query) => $query->where('status', 'completed'),
+            ]);
 
         $whiteboard = $project->whiteboard()
             ->with('updatedBy:id,name,email,role')

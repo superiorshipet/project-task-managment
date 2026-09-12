@@ -27,7 +27,7 @@
                 <p class="line-clamp-2 text-sm text-gray-500">{{ $project->description ?: 'No description yet.' }}</p>
                 <div class="mt-5">
                     <div class="mb-2 flex justify-between text-xs font-semibold text-gray-500">
-                        <span>Progress</span>
+                        <span>Project progress</span>
                         <span>{{ $progress }}%</span>
                     </div>
                     <div class="h-2 overflow-hidden rounded-full bg-gray-100">

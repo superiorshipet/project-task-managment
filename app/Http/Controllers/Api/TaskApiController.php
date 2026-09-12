@@ -33,7 +33,7 @@ class TaskApiController extends Controller
 
         $task->update([
             'status' => $status,
-            'progress' => $status === 'completed' ? 100 : $task->progress,
+            'progress' => $status === 'completed' ? 100 : ($status === 'in_progress' ? 50 : 0),
         ]);
 
         return TaskResource::make($task->refresh()->load(['project', 'assignee', 'assignees']));

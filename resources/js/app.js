@@ -229,6 +229,40 @@ function updateColumnCount(column, delta) {
     count.textContent = Math.max(0, Number.parseInt(count.textContent || '0', 10) + delta);
 }
 
+function updateProjectProgress(previousStatus, nextStatus) {
+    const progress = document.querySelector('[data-project-progress]');
+
+    if (!progress || previousStatus === nextStatus) {
+        return;
+    }
+
+    const total = Number.parseInt(progress.dataset.total || '0', 10);
+    let completed = Number.parseInt(progress.dataset.completed || '0', 10);
+
+    if (previousStatus === 'completed') {
+        completed -= 1;
+    }
+
+    if (nextStatus === 'completed') {
+        completed += 1;
+    }
+
+    completed = Math.max(0, Math.min(total, completed));
+    progress.dataset.completed = String(completed);
+
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const label = progress.querySelector('[data-project-progress-label]');
+    const bar = progress.querySelector('[data-project-progress-bar]');
+
+    if (label) {
+        label.textContent = `${percentage}%`;
+    }
+
+    if (bar) {
+        bar.style.width = `${percentage}%`;
+    }
+}
+
 function applyStatusButtonState(card, status) {
     card.querySelectorAll('[data-status-form]').forEach((form) => {
         const button = form.querySelector('button');
@@ -290,6 +324,7 @@ function submitTaskStatusForm(form, card, nextStatus) {
 
     const previousStatus = card.dataset.taskStatus;
     const snapshot = moveTaskCard(card, nextStatus);
+    updateProjectProgress(previousStatus, nextStatus);
     form.dataset.busy = '1';
 
     fetch(form.action, {
@@ -312,6 +347,7 @@ function submitTaskStatusForm(form, card, nextStatus) {
             rollbackTaskCard(card, snapshot);
             card.dataset.taskStatus = previousStatus;
             applyStatusButtonState(card, previousStatus);
+            updateProjectProgress(nextStatus, previousStatus);
             alert('Task status could not be updated. Please try again.');
         })
         .finally(() => {

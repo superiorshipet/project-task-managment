@@ -5,6 +5,10 @@
 @section('page-title', $project->title)
 
 @section('content')
+    @php
+        $projectProgress = $project->tasks_count ? round(($project->completed_tasks_count / $project->tasks_count) * 100) : 0;
+    @endphp
+
     <div class="mb-5 border-b border-gray-200 bg-white px-5 pt-5 shadow-sm" x-data="{ inviteOpen: false, copied: false }">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -20,6 +24,15 @@
                     <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{{ ucfirst($project->status) }}</span>
                     <span class="rounded-full bg-indigo-50 px-3 py-1 text-indigo-700">{{ $project->tasks_count }} tasks</span>
                     <span class="rounded-full bg-gray-100 px-3 py-1 text-gray-600">Owner: {{ $project->owner->name }}</span>
+                </div>
+                <div class="mt-4 max-w-xl" data-project-progress data-total="{{ $project->tasks_count }}" data-completed="{{ $project->completed_tasks_count }}">
+                    <div class="mb-2 flex items-center justify-between text-xs font-semibold text-gray-500">
+                        <span>Project progress</span>
+                        <span data-project-progress-label>{{ $projectProgress }}%</span>
+                    </div>
+                    <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                        <div data-project-progress-bar class="h-full rounded-full bg-indigo-500 transition-all" style="width: {{ $projectProgress }}%"></div>
+                    </div>
                 </div>
             </div>
 

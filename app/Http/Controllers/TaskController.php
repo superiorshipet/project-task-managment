@@ -63,7 +63,7 @@ class TaskController extends Controller
         $assignedUserIds = $this->assignedUserIds($request);
         $data['assigned_to'] = $assignedUserIds[0] ?? null;
         unset($data['assigned_users']);
-        $data['progress'] = $this->progressFor($data['status'], (int) ($data['progress'] ?? 0));
+        $data['progress'] = $this->progressFor($data['status']);
 
         if ($request->hasFile('attachment')) {
             $data['attachment'] = $request->file('attachment')->store('tasks/attachments', config('filesystems.default'));
@@ -103,7 +103,7 @@ class TaskController extends Controller
         $oldAssignedUserIds = $task->assignees()->pluck('users.id')->push($task->assigned_to)->filter()->unique()->values()->all();
         $data['assigned_to'] = $assignedUserIds[0] ?? null;
         unset($data['assigned_users']);
-        $data['progress'] = $this->progressFor($data['status'], (int) ($data['progress'] ?? $task->progress));
+        $data['progress'] = $this->progressFor($data['status']);
 
         if ($request->hasFile('attachment')) {
             if ($task->attachment) {
@@ -139,7 +139,7 @@ class TaskController extends Controller
     {
         $status = $request->validated('status');
         $previousStatus = $task->status;
-        $progress = $this->progressFor($status, $task->progress);
+        $progress = $this->progressFor($status);
 
         $task->update([
             'status' => $status,
@@ -155,7 +155,6 @@ class TaskController extends Controller
             return response()->json([
                 'id' => $task->id,
                 'status' => $status,
-                'progress' => $progress,
             ]);
         }
 
@@ -183,13 +182,13 @@ class TaskController extends Controller
         return redirect()->route('projects.show', $task->project)->with('status', 'Task restored successfully.');
     }
 
-    private function progressFor(string $status, int $progress): int
+    private function progressFor(string $status): int
     {
         return match ($status) {
-            'todo' => min($progress, 20),
-            'in_progress' => max(30, min($progress, 90)),
+            'todo' => 0,
+            'in_progress' => 50,
             'completed' => 100,
-            default => $progress,
+            default => 0,
         };
     }
 

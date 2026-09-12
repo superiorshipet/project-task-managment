@@ -16,7 +16,6 @@ class TaskResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'priority' => $this->priority,
-            'progress' => $this->progress,
             'due_date' => $this->due_date?->toDateString(),
             'attachment_url' => $this->attachment ? Storage::disk(config('filesystems.default'))->url($this->attachment) : null,
             'project' => [
