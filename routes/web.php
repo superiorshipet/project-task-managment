@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,6 +23,9 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::delete('/team/{user}', [TeamController::class, 'destroy'])->name('team.destroy');
+    Route::delete('/projects/{project}/users/{user}', [TeamController::class, 'removeFromProject'])->name('projects.users.destroy');
 
     Route::resource('projects', ProjectController::class);
     Route::post('/projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore');

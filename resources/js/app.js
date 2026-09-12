@@ -231,6 +231,42 @@ function rollbackTaskCard(card, snapshot) {
     }
 }
 
+function submitTaskStatusForm(form, card, nextStatus) {
+    if (!card || !nextStatus || form.dataset.pending === '1') {
+        return;
+    }
+
+    const previousStatus = card.dataset.taskStatus;
+    const snapshot = moveTaskCard(card, nextStatus);
+    form.dataset.pending = '1';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Status update failed with ${response.status}`);
+            }
+
+            return response.json();
+        })
+        .catch((error) => {
+            console.error(error);
+            rollbackTaskCard(card, snapshot);
+            card.dataset.taskStatus = previousStatus;
+            applyStatusButtonState(card, previousStatus);
+            alert('Task status could not be updated. Please try again.');
+        })
+        .finally(() => {
+            delete form.dataset.pending;
+        });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-live-search]').forEach((form) => {
         const run = debounce(() => liveSearch(form));
@@ -288,38 +324,68 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = form.closest('[data-task-card]');
         const nextStatus = form.querySelector('input[name="status"]')?.value;
 
-        if (!card || !nextStatus || form.dataset.pending === '1') {
+        submitTaskStatusForm(form, card, nextStatus);
+    });
+
+    document.addEventListener('dragstart', (event) => {
+        const card = event.target.closest('[data-task-card]');
+
+        if (!card) {
             return;
         }
 
-        const previousStatus = card.dataset.taskStatus;
-        const snapshot = moveTaskCard(card, nextStatus);
-        form.dataset.pending = '1';
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', card.dataset.taskId);
+        card.classList.add('opacity-50', 'ring-2', 'ring-indigo-300');
+    });
 
-        fetch(form.action, {
-            method: 'POST',
-            body: new FormData(form),
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`Status update failed with ${response.status}`);
-                }
+    document.addEventListener('dragend', (event) => {
+        event.target.closest('[data-task-card]')?.classList.remove('opacity-50', 'ring-2', 'ring-indigo-300');
+        document.querySelectorAll('[data-status-column]').forEach((column) => column.classList.remove('border-indigo-300', 'bg-indigo-50/40'));
+    });
 
-                return response.json();
-            })
-            .catch((error) => {
-                console.error(error);
-                rollbackTaskCard(card, snapshot);
-                card.dataset.taskStatus = previousStatus;
-                applyStatusButtonState(card, previousStatus);
-                alert('Task status could not be updated. Please try again.');
-            })
-            .finally(() => {
-                delete form.dataset.pending;
-            });
+    document.addEventListener('dragover', (event) => {
+        const column = event.target.closest('[data-status-column]');
+
+        if (!column) {
+            return;
+        }
+
+        event.preventDefault();
+        column.classList.add('border-indigo-300', 'bg-indigo-50/40');
+    });
+
+    document.addEventListener('dragleave', (event) => {
+        const column = event.target.closest('[data-status-column]');
+
+        if (column && !column.contains(event.relatedTarget)) {
+            column.classList.remove('border-indigo-300', 'bg-indigo-50/40');
+        }
+    });
+
+    document.addEventListener('drop', (event) => {
+        const column = event.target.closest('[data-status-column]');
+
+        if (!column) {
+            return;
+        }
+
+        event.preventDefault();
+        column.classList.remove('border-indigo-300', 'bg-indigo-50/40');
+
+        const taskId = event.dataTransfer.getData('text/plain');
+        const card = document.querySelector(`[data-task-card][data-task-id="${taskId}"]`);
+        const nextStatus = column.dataset.statusColumn;
+
+        if (!card || !nextStatus || card.dataset.taskStatus === nextStatus) {
+            return;
+        }
+
+        const form = Array.from(card.querySelectorAll('[data-status-form]'))
+            .find((candidate) => candidate.querySelector('input[name="status"]')?.value === nextStatus);
+
+        if (form) {
+            submitTaskStatusForm(form, card, nextStatus);
+        }
     });
 });

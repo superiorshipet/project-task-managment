@@ -9,10 +9,12 @@
 <article
     class="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     data-task-card
+    data-task-id="{{ $task->id }}"
     data-task-status="{{ $task->status }}"
     data-task-project-id="{{ $task->project_id }}"
     data-task-assigned-to="{{ $task->assigned_to }}"
     data-task-search="{{ str($task->title.' '.$task->description.' '.$task->priority.' '.$task->status.' '.$task->project?->title.' '.$task->assignee?->name)->lower() }}"
+    draggable="true"
 >
     @if ($task->attachment && str($task->attachment)->endsWith(['jpg', 'jpeg', 'png', 'webp']))
         <img src="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" alt="{{ $task->title }}" loading="lazy" class="mb-3 h-32 w-full rounded-xl object-cover">
