@@ -21,6 +21,8 @@
             </label>
         </div>
 
+        <a href="{{ route('password.request') }}" class="text-center text-sm font-medium text-slate-500 transition hover:text-blue-700">Forgot your password?</a>
+
         <x-turnstile />
 
         <button class="mx-auto mt-2 w-44 rounded-full bg-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-800/20 transition hover:bg-blue-800">Sign In</button>
