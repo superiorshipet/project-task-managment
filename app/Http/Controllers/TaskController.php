@@ -8,7 +8,7 @@ use App\Http\Requests\UpdateTaskStatusRequest;
 use App\Mail\TaskAssignedMail;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\User;
+use App\Support\WorkspaceLookups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -23,7 +23,7 @@ class TaskController extends Controller
 
         $tasks = Task::query()
             ->visibleTo($request->user())
-            ->with(['project', 'assignee'])
+            ->with(['project:id,title,user_id', 'assignee:id,name,email,role'])
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
@@ -35,8 +35,8 @@ class TaskController extends Controller
 
         return view('tasks.index', [
             'tasksByStatus' => $tasks,
-            'projects' => Project::query()->visibleTo($request->user())->orderBy('title')->get(),
-            'users' => User::query()->where('role', User::ROLE_USER)->orderBy('name')->get(),
+            'projects' => Project::query()->visibleTo($request->user())->select(['id', 'title', 'user_id'])->orderBy('title')->get(),
+            'users' => WorkspaceLookups::users(),
             'statuses' => Task::STATUSES,
         ]);
     }
@@ -65,8 +65,8 @@ class TaskController extends Controller
 
         return view('tasks.edit', [
             'task' => $task->load(['project', 'assignee']),
-            'projects' => Project::query()->visibleTo(request()->user())->orderBy('title')->get(),
-            'users' => User::query()->where('role', User::ROLE_USER)->orderBy('name')->get(),
+            'projects' => Project::query()->visibleTo(request()->user())->select(['id', 'title', 'user_id'])->orderBy('title')->get(),
+            'users' => WorkspaceLookups::users(),
         ]);
     }
 

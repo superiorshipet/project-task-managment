@@ -6,7 +6,7 @@ use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\User;
+use App\Support\WorkspaceLookups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +20,7 @@ class ProjectController extends Controller
 
         $projects = Project::query()
             ->visibleTo($request->user())
-            ->with(['owner'])
+            ->with(['owner:id,name,email,role'])
             ->withCount([
                 'tasks',
                 'tasks as completed_tasks_count' => fn ($query) => $query->where('status', 'completed'),
@@ -39,10 +39,7 @@ class ProjectController extends Controller
         $this->authorize('create', Project::class);
 
         return view('projects.create', [
-            'projectManagers' => User::query()
-                ->where('role', User::ROLE_PROJECT_MANAGER)
-                ->orderBy('name')
-                ->get(),
+            'projectManagers' => WorkspaceLookups::projectManagers(),
         ]);
     }
 
@@ -68,12 +65,12 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $users = User::query()->where('role', User::ROLE_USER)->orderBy('name')->get();
+        $users = WorkspaceLookups::users();
 
         $tasks = Task::query()
             ->where('project_id', $project->id)
             ->visibleTo($request->user())
-            ->with(['assignee', 'project'])
+            ->with(['assignee:id,name,email,role', 'project:id,title,user_id'])
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
@@ -83,7 +80,7 @@ class ProjectController extends Controller
             ->groupBy('status');
 
         return view('projects.show', [
-            'project' => $project->load(['owner']),
+            'project' => $project->load(['owner:id,name,email,role']),
             'tasksByStatus' => $tasks,
             'users' => $users,
             'statuses' => Task::STATUSES,
@@ -96,10 +93,7 @@ class ProjectController extends Controller
 
         return view('projects.edit', [
             'project' => $project,
-            'projectManagers' => User::query()
-                ->where('role', User::ROLE_PROJECT_MANAGER)
-                ->orderBy('name')
-                ->get(),
+            'projectManagers' => WorkspaceLookups::projectManagers(),
         ]);
     }
 

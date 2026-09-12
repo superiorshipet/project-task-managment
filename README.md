@@ -77,6 +77,10 @@ Use real SMTP credentials in `.env` before sending emails from production.
 
 Project and task search checks normal columns and JSON metadata tags/labels, so keywords like `design`, `backend`, `qa`, and `workflow` are searchable.
 
+Search is optimized through a denormalized `search_text` column with MySQL FULLTEXT indexes. JSON metadata remains the source of structured tags/labels, while `search_text` is rebuilt automatically when projects or tasks are saved.
+
+The app also keeps repeated workspace lookups in Redis, eager-loads board relations, selects only the columns needed for board lists, and prevents accidental Eloquent lazy loading during local development.
+
 Seeded admin account:
 
 ```text

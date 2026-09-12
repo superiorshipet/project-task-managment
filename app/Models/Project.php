@@ -20,6 +20,7 @@ class Project extends Model
         'cover_image',
         'status',
         'metadata',
+        'search_text',
     ];
 
     protected function casts(): array
@@ -41,16 +42,13 @@ class Project extends Model
 
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
-        if (! $keyword) {
+        $keyword = trim((string) $keyword);
+
+        if ($keyword === '') {
             return $query;
         }
 
-        return $query->where(function (Builder $query) use ($keyword): void {
-            $query->where('title', 'like', "%{$keyword}%")
-                ->orWhere('description', 'like', "%{$keyword}%")
-                ->orWhereJsonContains('metadata->tags', $keyword)
-                ->orWhereJsonContains('metadata->client', $keyword);
-        });
+        return $query->whereFullText('search_text', $keyword);
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder
@@ -67,6 +65,18 @@ class Project extends Model
             }
 
             $query->whereHas('tasks', fn (Builder $tasks) => $tasks->where('assigned_to', $user->id));
+        });
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Project $project): void {
+            $project->search_text = collect([
+                $project->title,
+                $project->description,
+                data_get($project->metadata, 'client'),
+                data_get($project->metadata, 'tags', []),
+            ])->flatten()->filter()->implode(' ');
         });
     }
 }
