@@ -116,7 +116,7 @@
             </div>
         </div>
     @else
-        <div class="grid gap-4 xl:grid-cols-[1fr_320px]">
+        <div>
             <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="mb-5 flex items-center justify-between gap-3">
                     <div>
@@ -174,21 +174,6 @@
                     </div>
                 </form>
             </section>
-
-            <aside class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <h3 class="text-lg font-bold">Mention handles</h3>
-                <div class="mt-4 space-y-2">
-                    @foreach ($mentionableUsers as $mentionableUser)
-                        @php
-                            $handle = Str::of($mentionableUser->name)->lower()->replaceMatches('/[^a-z0-9\s._-]/', '')->squish()->replace(' ', '.');
-                        @endphp
-                        <div class="rounded-xl border border-gray-100 p-3">
-                            <p class="font-semibold text-gray-950">{{ $mentionableUser->name }}</p>
-                            <p class="mt-1 text-sm font-semibold text-indigo-600">@{{ $handle }}</p>
-                        </div>
-                    @endforeach
-                </div>
-            </aside>
         </div>
     @endif
 

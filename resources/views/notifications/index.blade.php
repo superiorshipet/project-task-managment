@@ -41,7 +41,7 @@
         @forelse ($notifications as $notification)
             <article class="rounded-xl border {{ $notification->read_at ? 'border-gray-200 bg-white' : 'border-indigo-200 bg-indigo-50/30' }} p-4 shadow-sm">
                 <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div>
+                    <a href="{{ route('notifications.open', $notification) }}" class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="size-2 rounded-full {{ $notification->read_at ? 'bg-gray-300' : 'bg-indigo-500' }}"></span>
                             <h3 class="font-semibold">{{ $notification->title }}</h3>
@@ -50,16 +50,16 @@
                         <p class="mt-2 text-sm text-gray-600">{{ $notification->body }}</p>
                         <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-gray-500">
                             @if ($notification->project)
-                                <a href="{{ route('projects.show', ['project' => $notification->project, 'tab' => $notification->type === 'project_mention' ? 'mentions' : 'board']) }}" class="rounded-full bg-white px-3 py-1 text-indigo-600">{{ $notification->project->title }}</a>
+                                <span class="rounded-full bg-white px-3 py-1 text-indigo-600">{{ $notification->project->title }}</span>
                             @endif
                             @if ($notification->task)
                                 <span class="rounded-full bg-white px-3 py-1">{{ $notification->task->title }}</span>
                             @endif
                             <span class="rounded-full bg-white px-3 py-1">{{ $notification->created_at->diffForHumans() }}</span>
                         </div>
-                    </div>
+                    </a>
 
-                    <span class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-500">Read</span>
+                    <span class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold {{ $notification->read_at ? 'text-gray-500' : 'text-indigo-600' }}">{{ $notification->read_at ? 'Read' : 'Unread' }}</span>
                 </div>
             </article>
         @empty

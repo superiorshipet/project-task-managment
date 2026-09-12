@@ -9,6 +9,91 @@ function debounce(callback, delay = 80) {
     };
 }
 
+function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+    })[char]);
+}
+
+function renderNotificationItem(notification) {
+    const wrapperClass = notification.read
+        ? 'rounded-xl p-3 transition hover:bg-gray-50'
+        : 'rounded-xl p-3 transition bg-indigo-50/60 hover:bg-indigo-50';
+    const dotClass = notification.read ? 'bg-gray-300' : 'bg-indigo-500';
+
+    return `
+        <div class="${wrapperClass}">
+            <div class="flex items-start justify-between gap-3">
+                <a href="${escapeHtml(notification.open_url)}" class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <span class="size-2 shrink-0 rounded-full ${dotClass}"></span>
+                        <p class="truncate text-sm font-semibold text-gray-950">${escapeHtml(notification.title)}</p>
+                    </div>
+                    <p class="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">${escapeHtml(notification.body)}</p>
+                    <p class="mt-2 text-[11px] font-semibold text-gray-400">${escapeHtml(notification.created_at)}</p>
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function setNotificationCount(count) {
+    document.querySelectorAll('[data-notification-count]').forEach((counter) => {
+        counter.textContent = count;
+        counter.classList.toggle('bg-rose-500', count > 0);
+        counter.classList.toggle('text-white', count > 0);
+        counter.classList.toggle('text-slate-500', count === 0);
+    });
+
+    const badge = document.querySelector('[data-notification-badge]');
+    const unreadLabel = document.querySelector('[data-notification-unread-label]');
+
+    if (badge) {
+        badge.textContent = count;
+        badge.classList.toggle('grid', count > 0);
+        badge.classList.toggle('hidden', count === 0);
+    }
+
+    if (unreadLabel) {
+        unreadLabel.textContent = `${count} unread`;
+    }
+}
+
+async function refreshNotifications(root) {
+    if (!root?.dataset.feedUrl) {
+        return;
+    }
+
+    const response = await fetch(root.dataset.feedUrl, {
+        headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+        return;
+    }
+
+    const payload = await response.json();
+    const count = Number(payload.unread_count || 0);
+    const list = root.querySelector('[data-notifications-list]');
+
+    setNotificationCount(count);
+
+    if (!list) {
+        return;
+    }
+
+    if (!payload.notifications?.length) {
+        list.innerHTML = '<p class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">No notifications yet.</p>';
+        return;
+    }
+
+    list.innerHTML = payload.notifications.map(renderNotificationItem).join('');
+}
+
 function normalizedWords(value) {
     return String(value || '')
         .trim()
@@ -356,6 +441,13 @@ function submitTaskStatusForm(form, card, nextStatus) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const notificationsRoot = document.querySelector('[data-notifications-root]');
+
+    if (notificationsRoot) {
+        refreshNotifications(notificationsRoot).catch(console.error);
+        setInterval(() => refreshNotifications(notificationsRoot).catch(console.error), 2500);
+    }
+
     document.querySelectorAll('[data-live-search]').forEach((form) => {
         const run = debounce(() => liveSearch(form));
 

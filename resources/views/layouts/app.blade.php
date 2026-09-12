@@ -50,7 +50,7 @@
                     </a>
                     <a href="{{ route('notifications.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('notifications.*') ? 'bg-white/10' : '' }}">
                         <span>Notifications</span>
-                        <span class="rounded-full {{ ($unreadNotificationsCount ?? 0) > 0 ? 'bg-rose-500 text-white' : 'text-slate-500' }} px-2 py-0.5 text-xs">{{ $unreadNotificationsCount ?? 0 }}</span>
+                        <span data-notification-count class="rounded-full {{ ($unreadNotificationsCount ?? 0) > 0 ? 'bg-rose-500 text-white' : 'text-slate-500' }} px-2 py-0.5 text-xs">{{ $unreadNotificationsCount ?? 0 }}</span>
                     </a>
                     @if (auth()->user()->canManageProjects())
                         <a href="{{ route('team.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('team.*') ? 'bg-white/10' : '' }}">
@@ -205,22 +205,20 @@
                                 ->count();
                         @endphp
                         <div class="flex items-center gap-3">
-                            <div class="relative" x-data="{ openNotifications: false }" @click.outside="openNotifications = false">
+                            <div class="relative" x-data="{ openNotifications: false }" @click.outside="openNotifications = false" data-notifications-root data-feed-url="{{ route('notifications.feed') }}">
                                 <button type="button" @click="openNotifications = ! openNotifications" class="relative grid size-10 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:bg-gray-50" aria-label="Notifications">
                                     <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
                                         <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                                     </svg>
-                                    @if ($headerUnreadNotificationsCount > 0)
-                                        <span class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{{ $headerUnreadNotificationsCount }}</span>
-                                    @endif
+                                    <span data-notification-badge class="{{ $headerUnreadNotificationsCount > 0 ? 'grid' : 'hidden' }} absolute -right-1 -top-1 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{{ $headerUnreadNotificationsCount }}</span>
                                 </button>
 
                                 <div x-show="openNotifications" x-cloak x-transition.opacity.duration.150ms class="absolute right-0 z-40 mt-3 w-96 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
                                     <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
                                         <div>
                                             <p class="text-sm font-bold text-gray-950">Notifications</p>
-                                            <p class="text-xs font-semibold text-gray-400">{{ $headerUnreadNotificationsCount }} unread</p>
+                                            <p data-notification-unread-label class="text-xs font-semibold text-gray-400">{{ $headerUnreadNotificationsCount }} unread</p>
                                         </div>
                                         <form method="POST" action="{{ route('notifications.read-all') }}">
                                             @csrf
@@ -229,16 +227,11 @@
                                         </form>
                                     </div>
 
-                                    <div class="max-h-96 overflow-y-auto p-2">
+                                    <div class="max-h-96 overflow-y-auto p-2" data-notifications-list>
                                         @forelse ($headerNotifications as $notification)
-                                            @php
-                                                $notificationUrl = $notification->project
-                                                    ? route('projects.show', ['project' => $notification->project, 'tab' => $notification->type === 'project_mention' ? 'mentions' : 'board'])
-                                                    : route('notifications.index');
-                                            @endphp
                                             <div class="rounded-xl p-3 transition {{ $notification->read_at ? 'hover:bg-gray-50' : 'bg-indigo-50/60 hover:bg-indigo-50' }}">
                                                 <div class="flex items-start justify-between gap-3">
-                                                    <a href="{{ $notificationUrl }}" class="min-w-0 flex-1">
+                                                    <a href="{{ route('notifications.open', $notification) }}" class="min-w-0 flex-1">
                                                         <div class="flex items-center gap-2">
                                                             <span class="size-2 shrink-0 rounded-full {{ $notification->read_at ? 'bg-gray-300' : 'bg-indigo-500' }}"></span>
                                                             <p class="truncate text-sm font-semibold text-gray-950">{{ $notification->title }}</p>
