@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name', 'Taskari PM'))</title>
+    <link rel="preload" href="{{ Vite::asset('resources/css/app.css') }}" as="style">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -58,7 +59,7 @@
                     </div>
                     <div class="space-y-1">
                         @foreach ($sidebarProjects as $sidebarProject)
-                            <a href="{{ route('projects.show', $sidebarProject) }}" data-prefetch class="block truncate rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">
+                            <a href="{{ route('projects.show', $sidebarProject) }}" class="block truncate rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">
                                 <span class="mr-2 inline-block size-2 rounded-full bg-emerald-400"></span>{{ $sidebarProject->title }}
                             </a>
                         @endforeach

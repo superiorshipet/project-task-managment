@@ -90,7 +90,7 @@ class ProjectController extends Controller
         }
 
         return view('projects.show', [
-            'project' => $project->load(['owner:id,name,email,role']),
+            'project' => $project->load(['owner:id,name,email,role'])->loadCount('tasks'),
             'tasksByStatus' => $tasks,
             'users' => $users,
             'statuses' => Task::STATUSES,

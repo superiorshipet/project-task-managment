@@ -1,7 +1,5 @@
 const liveSearchControllers = new WeakMap();
 const liveSearchSignatures = new WeakMap();
-const prefetchedUrls = new Set();
-
 function debounce(callback, delay = 80) {
     let timeout;
 
@@ -277,23 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
             liveSearch(form);
         });
     });
-
-    document.addEventListener('mouseover', (event) => {
-        const link = event.target.closest('a[data-prefetch]');
-
-        if (!link || prefetchedUrls.has(link.href)) {
-            return;
-        }
-
-        prefetchedUrls.add(link.href);
-        fetch(link.href, {
-            headers: {
-                'X-Purpose': 'prefetch',
-            },
-        }).catch(() => {
-            prefetchedUrls.delete(link.href);
-        });
-    }, { passive: true });
 
     document.addEventListener('submit', (event) => {
         const form = event.target.closest('[data-status-form]');

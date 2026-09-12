@@ -21,7 +21,7 @@
                     <div>
                         <div class="mb-3 flex flex-wrap items-center gap-2">
                             <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ ucfirst($project->status) }}</span>
-                            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $project->tasks()->count() }} tasks</span>
+                            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $project->tasks_count }} tasks</span>
                         </div>
                         <p class="max-w-3xl text-sm leading-6 text-gray-500">{{ $project->description ?: 'No description yet.' }}</p>
                         <p class="mt-4 text-xs font-semibold text-gray-400">Owner: {{ $project->owner->name }}</p>
