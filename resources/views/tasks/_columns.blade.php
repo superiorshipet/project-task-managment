@@ -17,7 +17,7 @@
                 @forelse ($columnTasks as $task)
                     @include('tasks._card', ['task' => $task])
                 @empty
-                    <div class="rounded-2xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-sm text-gray-500">No tasks here.</div>
+                    <div data-client-empty class="rounded-2xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-sm text-gray-500">No tasks here.</div>
                 @endforelse
             </div>
         </section>

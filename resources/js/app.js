@@ -1,13 +1,84 @@
 const liveSearchControllers = new WeakMap();
 const prefetchedUrls = new Set();
 
-function debounce(callback, delay = 110) {
+function debounce(callback, delay = 80) {
     let timeout;
 
     return (...args) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => callback(...args), delay);
     };
+}
+
+function normalizedWords(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean);
+}
+
+function taskMatchesSearch(card, terms) {
+    if (terms.length === 0) {
+        return true;
+    }
+
+    const searchableWords = normalizedWords(card.dataset.taskSearch);
+
+    return terms.every((term) => searchableWords.some((word) => word.startsWith(term)));
+}
+
+function syncClientEmptyState(column, visibleCount) {
+    let empty = column.querySelector('[data-client-empty]');
+
+    if (visibleCount > 0) {
+        empty?.remove();
+        return;
+    }
+
+    if (!empty) {
+        empty = document.createElement('div');
+        empty.dataset.clientEmpty = '1';
+        empty.className = 'rounded-2xl border border-dashed border-gray-300 bg-white/70 p-6 text-center text-sm text-gray-500';
+        empty.textContent = 'No tasks here.';
+        column.querySelector('[data-column-cards]')?.append(empty);
+    }
+}
+
+function applyInstantBoardFilter(form) {
+    const target = document.querySelector(form.dataset.liveTarget);
+
+    if (!target) {
+        return;
+    }
+
+    const data = new FormData(form);
+    const status = String(data.get('status') || '');
+    const assignedTo = String(data.get('assigned_to') || '');
+    const projectId = String(data.get('project_id') || '');
+    const terms = normalizedWords(data.get('q'));
+
+    target.querySelectorAll('[data-client-empty]').forEach((empty) => empty.remove());
+
+    target.querySelectorAll('[data-task-card]').forEach((card) => {
+        const matches = (!status || card.dataset.taskStatus === status)
+            && (!assignedTo || card.dataset.taskAssignedTo === assignedTo)
+            && (!projectId || card.dataset.taskProjectId === projectId)
+            && taskMatchesSearch(card, terms);
+
+        card.hidden = !matches;
+    });
+
+    target.querySelectorAll('[data-status-column]').forEach((column) => {
+        const visibleCount = column.querySelectorAll('[data-task-card]:not([hidden])').length;
+        const count = column.querySelector('[data-column-count]');
+
+        if (count) {
+            count.textContent = visibleCount;
+        }
+
+        syncClientEmptyState(column, visibleCount);
+    });
 }
 
 function liveSearchUrl(form) {
@@ -142,6 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const run = debounce(() => liveSearch(form));
 
         form.addEventListener('input', (event) => {
+            applyInstantBoardFilter(form);
+
             if (event.target.name === 'q' && event.target.value.trim() === '') {
                 liveSearch(form);
                 return;
@@ -149,9 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             run();
         });
-        form.addEventListener('change', () => liveSearch(form));
+        form.addEventListener('change', () => {
+            applyInstantBoardFilter(form);
+            liveSearch(form);
+        });
         form.addEventListener('submit', (event) => {
             event.preventDefault();
+            applyInstantBoardFilter(form);
             liveSearch(form);
         });
     });
