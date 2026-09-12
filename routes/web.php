@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('projects', ProjectController::class);
     Route::get('/projects/{project}/whiteboard', [ProjectWhiteboardController::class, 'show'])->name('projects.whiteboard.show');
+    Route::get('/projects/{project}/whiteboard/sync', [ProjectWhiteboardController::class, 'sync'])->name('projects.whiteboard.sync');
     Route::put('/projects/{project}/whiteboard', [ProjectWhiteboardController::class, 'update'])->name('projects.whiteboard.update');
     Route::post('/projects/{project}/favorite', [ProjectFavoriteController::class, 'toggle'])->name('projects.favorite');
     Route::post('/projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore');

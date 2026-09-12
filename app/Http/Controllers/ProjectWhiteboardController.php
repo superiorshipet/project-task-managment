@@ -70,10 +70,24 @@ class ProjectWhiteboardController extends Controller
         return response()->json($this->snapshot($whiteboard));
     }
 
+    public function sync(Project $project): JsonResponse
+    {
+        $this->authorize('view', $project);
+
+        $whiteboard = $project->whiteboard()
+            ->with('updatedBy:id,name,email,role')
+            ->first();
+
+        return response()->json($this->snapshot($whiteboard));
+    }
+
     private function snapshot(?ProjectWhiteboard $whiteboard): array
     {
+        $data = $whiteboard?->data ?? ['items' => []];
+
         return [
-            'data' => $whiteboard?->data ?? ['items' => []],
+            'data' => $data,
+            'revision' => md5(json_encode($data)),
             'updated_at' => $whiteboard?->updated_at?->toISOString(),
             'updated_by' => $whiteboard?->updatedBy?->only(['id', 'name', 'email', 'role']),
         ];

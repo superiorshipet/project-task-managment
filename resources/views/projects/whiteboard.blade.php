@@ -66,8 +66,10 @@
         data-whiteboard
         data-save-url="{{ route('projects.whiteboard.update', $project) }}"
         data-load-url="{{ route('projects.whiteboard.show', $project) }}"
+        data-sync-url="{{ route('projects.whiteboard.sync', $project) }}"
         data-initial='@json($whiteboard?->data ?? ['items' => []])'
         data-updated-at="{{ $whiteboard?->updated_at?->toISOString() }}"
+        data-revision="{{ md5(json_encode($whiteboard?->data ?? ['items' => []])) }}"
     >
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-2">
@@ -132,7 +134,11 @@
             let activePath = null;
             let dirty = false;
             let saveTimer = null;
+            let saveInFlight = false;
+            let saveQueued = false;
+            let lastLiveSaveAt = 0;
             let lastUpdatedAt = root.dataset.updatedAt || null;
+            let lastRevision = root.dataset.revision || null;
             let items = (JSON.parse(root.dataset.initial || '{"items":[]}').items || []);
 
             function point(event) {
@@ -166,12 +172,19 @@
                 })[char]);
             }
 
-            function markDirty() {
+            function markDirty(live = false) {
                 dirty = true;
                 saveState.textContent = 'Editing';
                 saveState.className = 'rounded-full bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700';
                 clearTimeout(saveTimer);
-                saveTimer = setTimeout(save, 1200);
+
+                if (live) {
+                    const delay = Math.max(0, 260 - (Date.now() - lastLiveSaveAt));
+                    saveTimer = setTimeout(save, delay);
+                    return;
+                }
+
+                saveTimer = setTimeout(save, 450);
             }
 
             function itemMarkup(item) {
@@ -226,7 +239,7 @@
                 selectedId = id;
                 setMode('select');
                 render();
-                markDirty();
+                markDirty(true);
             }
 
             function moveItem(item, dx, dy) {
@@ -247,48 +260,85 @@
             }
 
             async function save() {
-                clearTimeout(saveTimer);
-                saveState.textContent = 'Saving';
-                saveState.className = 'rounded-full bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700';
+                if (!dirty && !saveQueued) return;
 
-                const response = await fetch(root.dataset.saveUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token,
-                    },
-                    body: JSON.stringify({ data: { items } }),
-                });
-
-                if (!response.ok) {
-                    saveState.textContent = 'Save failed';
-                    saveState.className = 'rounded-full bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600';
+                if (saveInFlight) {
+                    saveQueued = true;
                     return;
                 }
 
-                const payload = await response.json();
-                lastUpdatedAt = payload.updated_at;
-                dirty = false;
-                saveState.textContent = 'Saved';
-                saveState.className = 'rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';
+                clearTimeout(saveTimer);
+                saveInFlight = true;
+                saveQueued = false;
+                lastLiveSaveAt = Date.now();
+                saveState.textContent = 'Saving';
+                saveState.className = 'rounded-full bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700';
+
+                const payloadToSave = { data: { items } };
+                let failed = false;
+
+                try {
+                    const response = await fetch(root.dataset.saveUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token,
+                        },
+                        body: JSON.stringify(payloadToSave),
+                    });
+
+                    if (!response.ok) {
+                        failed = true;
+                        saveState.textContent = 'Save failed';
+                        saveState.className = 'rounded-full bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600';
+                        return;
+                    }
+
+                    const payload = await response.json();
+                    lastUpdatedAt = payload.updated_at;
+                    lastRevision = payload.revision;
+                    dirty = saveQueued;
+                    saveState.textContent = dirty ? 'Syncing' : 'Live';
+                    saveState.className = dirty
+                        ? 'rounded-full bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700'
+                        : 'rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';
+                } catch (error) {
+                    failed = true;
+                    saveState.textContent = 'Save failed';
+                    saveState.className = 'rounded-full bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600';
+                } finally {
+                    saveInFlight = false;
+
+                    if (failed) {
+                        dirty = true;
+                        saveTimer = setTimeout(save, 1500);
+                        return;
+                    }
+
+                    if (saveQueued || dirty) {
+                        saveQueued = false;
+                        saveTimer = setTimeout(save, 80);
+                    }
+                }
             }
 
             async function refresh() {
-                if (dirty || activeDrag || activePath) return;
+                if (dirty || saveInFlight || activeDrag || activePath) return;
 
-                const response = await fetch(root.dataset.loadUrl, {
+                const response = await fetch(root.dataset.syncUrl, {
                     headers: { 'Accept': 'application/json' },
                 });
 
                 if (!response.ok) return;
 
                 const payload = await response.json();
-                if (payload.updated_at && payload.updated_at !== lastUpdatedAt) {
+                if (payload.revision && payload.revision !== lastRevision) {
                     items = payload.data.items || [];
                     lastUpdatedAt = payload.updated_at;
+                    lastRevision = payload.revision;
                     selectedId = null;
-                    saveState.textContent = 'Synced';
+                    saveState.textContent = 'Live';
                     saveState.className = 'rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600';
                     render();
                 }
@@ -301,14 +351,14 @@
                 items = items.filter((item) => item.id !== selectedId);
                 selectedId = null;
                 render();
-                markDirty();
+                markDirty(true);
             });
             root.querySelector('[data-clear]').addEventListener('click', () => {
                 if (!confirm('Clear the whiteboard?')) return;
                 items = [];
                 selectedId = null;
                 render();
-                markDirty();
+                markDirty(true);
             });
 
             canvas.addEventListener('pointerdown', (event) => {
@@ -319,6 +369,7 @@
                     activePath = { id: `item-${Date.now()}`, type: 'path', color: colorInput.value, points: [cursor] };
                     items.push(activePath);
                     render();
+                    markDirty(true);
                     return;
                 }
 
@@ -341,10 +392,10 @@
                 const cursor = point(event);
 
                 if (activePath) {
-                    activePath.points.push(cursor);
-                    render();
-                    markDirty();
-                    return;
+                activePath.points.push(cursor);
+                render();
+                markDirty(true);
+                return;
                 }
 
                 if (!activeDrag) return;
@@ -355,17 +406,18 @@
                 moveItem(item, cursor.x - activeDrag.last.x, cursor.y - activeDrag.last.y);
                 activeDrag.last = cursor;
                 render();
-                markDirty();
+                markDirty(true);
             });
 
             window.addEventListener('pointerup', () => {
                 activeDrag = null;
                 activePath = null;
+                save();
             });
 
             render();
             setMode('select');
-            setInterval(refresh, 5000);
+            setInterval(refresh, 650);
         })();
     </script>
 @endsection
