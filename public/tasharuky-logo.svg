@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="240" viewBox="0 0 880 240" role="img" aria-labelledby="title">
   <title id="title">Tasharuky</title>
-  <rect width="880" height="240" rx="28" fill="#111827"/>
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <path d="M45 42h120v120" stroke="#7C8EF7" stroke-width="34"/>
     <path d="M45 42h120" stroke="#7C8EF7" stroke-width="34"/>
