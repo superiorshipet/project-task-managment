@@ -75,12 +75,15 @@
                         ->limit(5)
                         ->get();
                 @endphp
-                <div class="mt-8">
-                    <div class="mb-3 flex items-center justify-between px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div class="mt-8" x-data="{ open: true }">
+                    <button type="button" @click="open = ! open" class="mb-3 flex w-full items-center justify-between rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-white/5 hover:text-slate-300">
                         <span>Recent Projects</span>
-                        <span>{{ $sidebarProjects->count() }}</span>
-                    </div>
-                    <div class="space-y-1">
+                        <span class="flex items-center gap-2">
+                            <span>{{ $sidebarProjects->count() }}</span>
+                            <span class="transition" :class="{ 'rotate-180': open }">⌄</span>
+                        </span>
+                    </button>
+                    <div x-show="open" x-transition.opacity.duration.150ms class="space-y-1">
                         @foreach ($sidebarProjects as $sidebarProject)
                             <a href="{{ route('projects.show', $sidebarProject) }}" class="block truncate rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">
                                 <span class="mr-2 inline-block size-2 rounded-full bg-emerald-400"></span>{{ $sidebarProject->title }}
@@ -89,12 +92,15 @@
                     </div>
                 </div>
 
-                <div class="mt-6">
-                    <div class="mb-3 flex items-center justify-between px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div class="mt-6" x-data="{ open: true }">
+                    <button type="button" @click="open = ! open" class="mb-3 flex w-full items-center justify-between rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-white/5 hover:text-slate-300">
                         <span>Favorite Projects</span>
-                        <span>{{ $favoriteProjects->count() }}</span>
-                    </div>
-                    <div class="space-y-1">
+                        <span class="flex items-center gap-2">
+                            <span>{{ $favoriteProjects->count() }}</span>
+                            <span class="transition" :class="{ 'rotate-180': open }">⌄</span>
+                        </span>
+                    </button>
+                    <div x-show="open" x-transition.opacity.duration.150ms class="space-y-1">
                         @forelse ($favoriteProjects as $favoriteProject)
                             <a href="{{ route('projects.show', $favoriteProject) }}" class="block truncate rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">
                                 <span class="mr-2 inline-block size-2 rounded-full bg-violet-400"></span>{{ $favoriteProject->title }}
