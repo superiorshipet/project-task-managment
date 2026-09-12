@@ -14,9 +14,8 @@ class TaskPolicy
 
     public function view(User $user, Task $task): bool
     {
-        return $user->isAdmin()
-            || $task->assigned_to === $user->id
-            || ($user->isProjectManager() && $task->project->user_id === $user->id);
+        return $task->assigned_to === $user->id
+            || $user->canViewProject($task->project);
     }
 
     public function create(User $user): bool

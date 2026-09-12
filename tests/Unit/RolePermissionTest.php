@@ -48,4 +48,15 @@ class RolePermissionTest extends TestCase
         $this->assertFalse($policy->update($user, $task));
         $this->assertFalse($policy->delete($user, $task));
     }
+
+    public function test_project_member_can_view_invited_project(): void
+    {
+        $user = new User(['role' => User::ROLE_USER]);
+        $user->id = 7;
+
+        $project = new Project(['user_id' => 10]);
+        $project->setRelation('members', collect([$user]));
+
+        $this->assertTrue((new ProjectPolicy())->view($user, $project));
+    }
 }

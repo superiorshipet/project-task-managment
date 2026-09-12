@@ -90,6 +90,24 @@ class User extends Authenticatable
             || ($this->isProjectManager() && $project->user_id === $this->id);
     }
 
+    public function canViewProject(Project $project): bool
+    {
+        if ($this->canManageProject($project)) {
+            return true;
+        }
+
+        if ($project->relationLoaded('members')) {
+            if ($project->members->contains($this)) {
+                return true;
+            }
+
+            return $project->tasks()->where('assigned_to', $this->id)->exists();
+        }
+
+        return $project->members()->whereKey($this->id)->exists()
+            || $project->tasks()->where('assigned_to', $this->id)->exists();
+    }
+
     /**
      * Get the attributes that should be cast.
      *

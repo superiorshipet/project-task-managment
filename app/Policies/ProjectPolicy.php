@@ -14,9 +14,7 @@ class ProjectPolicy
 
     public function view(User $user, Project $project): bool
     {
-        return $user->isAdmin()
-            || ($user->isProjectManager() && $project->user_id === $user->id)
-            || $project->tasks()->where('assigned_to', $user->id)->exists();
+        return $user->canViewProject($project);
     }
 
     public function create(User $user): bool
