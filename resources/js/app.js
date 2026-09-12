@@ -1,4 +1,5 @@
 const liveSearchControllers = new WeakMap();
+const liveSearchSignatures = new WeakMap();
 const prefetchedUrls = new Set();
 
 function debounce(callback, delay = 80) {
@@ -93,6 +94,7 @@ function liveSearchUrl(form) {
         }
     });
 
+    const signature = params.toString();
     const displayParams = new URLSearchParams(params);
     params.set('partial', form.dataset.livePartial || '1');
     url.search = params.toString();
@@ -100,7 +102,12 @@ function liveSearchUrl(form) {
     return {
         requestUrl: url.toString(),
         displayUrl: displayParams.toString() ? `${url.pathname}?${displayParams.toString()}` : url.pathname,
+        signature,
     };
+}
+
+function markLiveSearchIntent(form) {
+    liveSearchSignatures.set(form, liveSearchUrl(form).signature);
 }
 
 function liveSearch(form) {
@@ -116,8 +123,9 @@ function liveSearch(form) {
     const controller = new AbortController();
     liveSearchControllers.set(form, controller);
 
-    const { requestUrl, displayUrl } = liveSearchUrl(form);
-    target.classList.add('opacity-60');
+    const { requestUrl, displayUrl, signature } = liveSearchUrl(form);
+    liveSearchSignatures.set(form, signature);
+    target.setAttribute('aria-busy', 'true');
 
     fetch(requestUrl, {
         headers: {
@@ -133,7 +141,12 @@ function liveSearch(form) {
             return response.text();
         })
         .then((html) => {
+            if (liveSearchSignatures.get(form) !== signature) {
+                return;
+            }
+
             target.innerHTML = html;
+            applyInstantBoardFilter(form);
             window.history.replaceState({}, '', displayUrl);
         })
         .catch((error) => {
@@ -141,7 +154,11 @@ function liveSearch(form) {
                 console.error(error);
             }
         })
-        .finally(() => target.classList.remove('opacity-60'));
+        .finally(() => {
+            if (liveSearchSignatures.get(form) === signature) {
+                target.removeAttribute('aria-busy');
+            }
+        });
 }
 
 function updateColumnCount(column, delta) {
@@ -213,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const run = debounce(() => liveSearch(form));
 
         form.addEventListener('input', (event) => {
+            markLiveSearchIntent(form);
             applyInstantBoardFilter(form);
 
             if (event.target.name === 'q' && event.target.value.trim() === '') {
@@ -223,11 +241,13 @@ document.addEventListener('DOMContentLoaded', () => {
             run();
         });
         form.addEventListener('change', () => {
+            markLiveSearchIntent(form);
             applyInstantBoardFilter(form);
             liveSearch(form);
         });
         form.addEventListener('submit', (event) => {
             event.preventDefault();
+            markLiveSearchIntent(form);
             applyInstantBoardFilter(form);
             liveSearch(form);
         });
