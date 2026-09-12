@@ -19,13 +19,6 @@
 >
     @if ($task->attachment && str($task->attachment)->endsWith(['jpg', 'jpeg', 'png', 'webp']))
         <img src="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" alt="{{ $task->title }}" loading="lazy" class="mb-3 h-32 w-full rounded-lg object-cover">
-    @else
-        <div class="mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-gradient-to-br from-indigo-50 via-white to-amber-50">
-            <div class="rounded-lg border border-gray-200 bg-white/80 px-4 py-3 text-center shadow-sm">
-                <p class="text-[10px] font-semibold uppercase text-gray-400">Task Preview</p>
-                <p class="mt-1 max-w-36 truncate text-sm font-bold text-gray-900">{{ $task->title }}</p>
-            </div>
-        </div>
     @endif
 
     <div class="mb-2 flex items-start justify-between gap-3">
