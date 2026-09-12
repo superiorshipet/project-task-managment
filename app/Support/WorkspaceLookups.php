@@ -10,19 +10,23 @@ class WorkspaceLookups
 {
     public static function users(): Collection
     {
-        return Cache::remember('lookups.users', now()->addMinutes(10), fn () => User::query()
-            ->select(['id', 'name', 'email', 'role'])
-            ->where('role', User::ROLE_USER)
-            ->orderBy('name')
-            ->get());
+        return self::cachedUsers('lookups.users.v2', User::ROLE_USER);
     }
 
     public static function projectManagers(): Collection
     {
-        return Cache::remember('lookups.project_managers', now()->addMinutes(10), fn () => User::query()
+        return self::cachedUsers('lookups.project_managers.v2', User::ROLE_PROJECT_MANAGER);
+    }
+
+    private static function cachedUsers(string $key, string $role): Collection
+    {
+        $users = Cache::remember($key, now()->addMinutes(10), fn () => User::query()
             ->select(['id', 'name', 'email', 'role'])
-            ->where('role', User::ROLE_PROJECT_MANAGER)
+            ->where('role', $role)
             ->orderBy('name')
-            ->get());
+            ->get()
+            ->toArray());
+
+        return User::hydrate($users);
     }
 }
