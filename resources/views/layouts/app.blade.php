@@ -12,8 +12,8 @@
 </head>
 <body class="min-h-screen bg-[#f6f7fb] font-sans text-gray-950 antialiased">
     <div class="flex min-h-screen">
-        <aside class="sticky top-0 hidden h-screen w-80 shrink-0 border-r border-white/10 bg-[#1f2029] text-white lg:flex">
-            <div class="flex w-16 flex-col items-center gap-4 border-r border-white/10 bg-[#191a22] py-6">
+        <aside class="sticky top-0 hidden h-screen w-80 shrink-0 overflow-hidden border-r border-white/10 bg-[#1f2029] text-white lg:flex">
+            <div class="flex h-screen w-16 flex-col items-center gap-4 overflow-hidden border-r border-white/10 bg-[#191a22] py-6">
                 <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="size-9 rounded-xl object-cover shadow-lg shadow-indigo-500/20">
                 <a href="{{ route('dashboard') }}" class="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white {{ request()->routeIs('dashboard') ? 'bg-white/10 text-white' : '' }}">⌂</a>
                 <a href="{{ route('projects.index') }}" class="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white {{ request()->routeIs('projects.*') ? 'bg-white/10 text-white' : '' }}">▦</a>
@@ -30,7 +30,7 @@
                 </div>
             </div>
 
-            <div class="flex min-w-0 flex-1 flex-col px-5 py-6">
+            <div class="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 py-6">
                 @auth
                     @php
                         $unreadNotificationsCount = \App\Models\WorkspaceNotification::query()
@@ -122,7 +122,7 @@
                     </div>
                 </div>
 
-                <div class="mt-auto rounded-xl border border-white/10 bg-white/5 p-4">
+                <div class="mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
                     <div class="mb-4 flex items-center justify-between">
                         <p class="text-sm font-semibold">Calendar</p>
                         <p class="text-xs text-slate-500">{{ now()->format('M Y') }}</p>
