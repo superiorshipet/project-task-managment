@@ -1,7 +1,7 @@
 <div class="grid gap-5 xl:grid-cols-3">
     @foreach (['todo' => ['To Do', 'bg-rose-400'], 'in_progress' => ['In Progress', 'bg-amber-400'], 'completed' => ['Completed', 'bg-emerald-400']] as $status => [$label, $dot])
         @php($columnTasks = $tasksByStatus->get($status, collect()))
-        <section class="min-h-[620px] rounded-2xl border border-gray-200 bg-gray-100/60 p-4 transition" data-status-column="{{ $status }}">
+        <section class="min-h-[620px] rounded-xl border border-gray-200 bg-[#f3f4f7] p-3 transition" data-status-column="{{ $status }}">
             <div class="mb-4 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="size-2 rounded-full {{ $dot }}"></span>
@@ -9,7 +9,7 @@
                     <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-500" data-column-count>{{ $columnTasks->count() }}</span>
                 </div>
                 @can('create', \App\Models\Task::class)
-                    <button type="button" @click="openTaskModal = true" class="grid size-8 place-items-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800">+</button>
+                    <button type="button" @click="openTaskModal = true" class="grid size-8 place-items-center rounded-lg bg-slate-950 text-white transition hover:bg-slate-800">+</button>
                 @endcan
             </div>
 

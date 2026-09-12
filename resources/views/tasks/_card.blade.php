@@ -7,7 +7,7 @@
 @endphp
 
 <article
-    class="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    class="group rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     x-data="{ taskMenuOpen: false }"
     data-task-card
     data-task-id="{{ $task->id }}"
@@ -18,7 +18,14 @@
     draggable="true"
 >
     @if ($task->attachment && str($task->attachment)->endsWith(['jpg', 'jpeg', 'png', 'webp']))
-        <img src="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" alt="{{ $task->title }}" loading="lazy" class="mb-3 h-32 w-full rounded-xl object-cover">
+        <img src="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" alt="{{ $task->title }}" loading="lazy" class="mb-3 h-32 w-full rounded-lg object-cover">
+    @else
+        <div class="mb-3 flex h-32 w-full items-center justify-center rounded-lg bg-gradient-to-br from-indigo-50 via-white to-amber-50">
+            <div class="rounded-lg border border-gray-200 bg-white/80 px-4 py-3 text-center shadow-sm">
+                <p class="text-[10px] font-semibold uppercase text-gray-400">Task Preview</p>
+                <p class="mt-1 max-w-36 truncate text-sm font-bold text-gray-900">{{ $task->title }}</p>
+            </div>
+        </div>
     @endif
 
     <div class="mb-2 flex items-start justify-between gap-3">
@@ -74,6 +81,12 @@
             </div>
             <span class="max-w-24 truncate text-xs font-medium text-gray-500">{{ $task->assignee?->name ?? 'Unassigned' }}</span>
         </div>
+    </div>
+
+    <div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-[11px] font-semibold text-gray-500">
+        <span class="rounded-lg bg-gray-100 px-2 py-1">⚑ {{ $task->due_date?->format('d M Y') ?? 'No date' }}</span>
+        <span>☷ {{ $task->attachment ? 1 : 0 }}</span>
+        <span>☰ {{ strlen((string) $task->description) > 0 ? 1 : 0 }}</span>
     </div>
 
     <div class="mt-3 grid grid-cols-3 gap-1">

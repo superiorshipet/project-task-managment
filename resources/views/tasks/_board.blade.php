@@ -1,32 +1,32 @@
 <div x-data="{ openTaskModal: false }">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <form class="grid flex-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_180px_180px_auto]" data-live-search data-live-mode="client" data-live-target="#task-board-columns" data-live-partial="1">
+        <form class="grid flex-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_160px_180px_180px_auto]" data-live-search data-live-mode="client" data-live-target="#task-board-columns" data-live-partial="1">
             @if (!isset($project) || ! $project)
-                <select name="project_id" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+                <select name="project_id" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                     <option value="">All projects</option>
                     @foreach ($projects as $item)
                         <option value="{{ $item->id }}" @selected((int) request('project_id') === $item->id)>{{ $item->title }}</option>
                     @endforeach
                 </select>
             @endif
-            <input name="q" value="{{ request('q') }}" placeholder="Search tasks" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
-            <select name="status" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+            <input name="q" value="{{ request('q') }}" placeholder="Search tasks" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+            <select name="status" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                 <option value="">All status</option>
                 @foreach (['todo' => 'To Do', 'in_progress' => 'In Progress', 'completed' => 'Completed'] as $value => $label)
                     <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
-            <select name="assigned_to" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+            <select name="assigned_to" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                 <option value="">All users</option>
                 @foreach ($users as $user)
                     <option value="{{ $user->id }}" @selected((int) request('assigned_to') === $user->id)>{{ $user->name }}</option>
                 @endforeach
             </select>
-            <button class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Filter</button>
+            <button class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Filter</button>
         </form>
 
         @can('create', \App\Models\Task::class)
-            <button type="button" @click="openTaskModal = true" class="rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">New Task</button>
+            <button type="button" @click="openTaskModal = true" class="rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 transition hover:bg-indigo-500">New Task</button>
         @endcan
     </div>
 
