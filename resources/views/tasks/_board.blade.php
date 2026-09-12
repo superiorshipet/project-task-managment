@@ -32,7 +32,7 @@
         </form>
 
         @can('create', \App\Models\Task::class)
-            <button type="button" @click="openTaskModal = true" class="rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 transition hover:bg-indigo-500">New Task</button>
+            <button type="button" @click="openTaskModal = true" class="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">New Task</button>
         @endcan
     </div>
 
