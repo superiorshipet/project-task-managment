@@ -185,13 +185,11 @@
             const input = chat.querySelector('[data-mention-input]');
             const list = chat.querySelector('[data-mention-list]');
             const messages = document.querySelector('[data-chat-messages]');
-            const submitButton = chat.querySelector('button[type="submit"], button:not([type])');
             const tokenInput = chat.querySelector('input[name="_token"]');
             const users = JSON.parse(chat.dataset.mentionUsers || '[]');
             let activeIndex = 0;
             let matches = [];
             let token = null;
-            let sending = false;
             let fetchingMessages = false;
 
             function escapeHtml(value) {
@@ -280,7 +278,7 @@
                                 <span class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-bold text-white">${escapeHtml(message.user?.initials || 'NA')}</span>
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-bold text-gray-950">${escapeHtml(message.user?.name || 'Unknown')}</p>
-                                    <p class="text-xs font-semibold text-gray-400">${pending ? 'Sending...' : escapeHtml(message.created_at)}</p>
+                                    <p data-chat-message-status class="text-xs font-semibold text-gray-400">${pending ? 'Just now' : escapeHtml(message.created_at)}</p>
                                 </div>
                             </div>
                             ${message.mentioned ? '<span class="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Mention</span>' : ''}
@@ -400,12 +398,9 @@
                 event.preventDefault();
 
                 const body = input.value.trim();
-                if (!body || sending) return;
+                if (!body) return;
 
-                sending = true;
-                submitButton.disabled = true;
-
-                const pendingId = `pending-${Date.now()}`;
+                const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
                 appendMessage({
                     id: pendingId,
                     body,
@@ -421,7 +416,7 @@
                 const formData = new FormData(chat);
                 formData.set('body', body);
 
-                try {
+                (async () => {
                     const headers = {
                         Accept: 'application/json',
                         'X-CSRF-TOKEN': tokenInput?.value || '',
@@ -445,17 +440,18 @@
 
                     const payload = await response.json();
                     replacePendingMessage(pendingId, payload.message);
-                } catch (error) {
+                })().catch((error) => {
                     console.error(error);
                     const pending = messages?.querySelector(`[data-chat-message-id="${pendingId}"]`);
                     pending?.classList.remove('border-indigo-100', 'bg-indigo-50/40');
                     pending?.classList.add('border-rose-200', 'bg-rose-50');
-                    input.value = body;
-                    alert('Message could not be sent. Please try again.');
-                } finally {
-                    sending = false;
-                    submitButton.disabled = false;
-                }
+                    const status = pending?.querySelector('[data-chat-message-status]');
+                    if (status) {
+                        status.textContent = 'Not sent';
+                        status.classList.remove('text-gray-400');
+                        status.classList.add('text-rose-500');
+                    }
+                });
             });
 
             scrollChatToBottom();
@@ -465,7 +461,7 @@
                     .listen('.project.message.sent', (event) => appendMessage(event.message));
             }
 
-            setInterval(() => fetchMessages().catch(console.error), 1000);
+            setInterval(() => fetchMessages().catch(console.error), 2500);
         })();
     </script>
 @endsection

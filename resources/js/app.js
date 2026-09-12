@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         }
 
-        setInterval(() => refreshNotifications(notificationsRoot).catch(console.error), 2500);
+        setInterval(() => refreshNotifications(notificationsRoot).catch(console.error), 5000);
     }
 
     document.querySelectorAll('[data-live-search]').forEach((form) => {
