@@ -11,6 +11,11 @@ class NotificationController extends Controller
 {
     public function index(Request $request): View
     {
+        WorkspaceNotification::query()
+            ->visibleTo($request->user())
+            ->unread()
+            ->update(['read_at' => now()]);
+
         $notifications = WorkspaceNotification::query()
             ->visibleTo($request->user())
             ->with(['project:id,title', 'task:id,title,status'])
@@ -26,7 +31,7 @@ class NotificationController extends Controller
 
         return view('notifications.index', [
             'notifications' => $notifications,
-            'unreadCount' => WorkspaceNotification::query()->visibleTo($request->user())->unread()->count(),
+            'unreadCount' => 0,
             'types' => WorkspaceNotification::query()->visibleTo($request->user())->distinct()->pluck('type'),
         ]);
     }

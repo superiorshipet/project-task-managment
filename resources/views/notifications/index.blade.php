@@ -5,8 +5,8 @@
 @section('page-title', 'Notification Center')
 
 @section('content')
-    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <form method="GET" action="{{ route('notifications.index') }}" class="grid flex-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[180px_220px_auto]">
+    <div class="mb-5">
+        <form method="GET" action="{{ route('notifications.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-[180px_220px_auto]">
             <select name="state" class="rounded-lg border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                 <option value="">All notifications</option>
                 <option value="unread" @selected(request('state') === 'unread')>Unread</option>
@@ -19,12 +19,6 @@
                 @endforeach
             </select>
             <button class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Filter</button>
-        </form>
-
-        <form method="POST" action="{{ route('notifications.read-all') }}">
-            @csrf
-            @method('PATCH')
-            <button class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">Mark all read</button>
         </form>
     </div>
 
@@ -65,13 +59,7 @@
                         </div>
                     </div>
 
-                    @unless ($notification->read_at)
-                        <form method="POST" action="{{ route('notifications.read', $notification) }}">
-                            @csrf
-                            @method('PATCH')
-                            <button class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50">Mark read</button>
-                        </form>
-                    @endunless
+                    <span class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-500">Read</span>
                 </div>
             </article>
         @empty
