@@ -65,7 +65,7 @@ class Project extends Model
 
         return $query->where(function (Builder $query) use ($user): void {
             if ($user->isProjectManager()) {
-                $query->where('user_id', $user->id);
+                $query->where('projects.user_id', $user->id);
 
                 return;
             }

@@ -44,7 +44,7 @@ class DashboardController extends Controller
 
         if ($user->isProjectManager()) {
             return User::query()
-                ->whereHas('assignedTasks.project', fn ($query) => $query->where('user_id', $user->id))
+                ->whereHas('assignedTasks.project', fn ($query) => $query->where('projects.user_id', $user->id))
                 ->count();
         }
 

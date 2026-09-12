@@ -63,7 +63,7 @@ class Task extends Model
 
         return $query->where(function (Builder $query) use ($user): void {
             if ($user->isProjectManager()) {
-                $query->orWhereHas('project', fn (Builder $projects) => $projects->where('user_id', $user->id));
+                $query->orWhereHas('project', fn (Builder $projects) => $projects->where('projects.user_id', $user->id));
 
                 return;
             }

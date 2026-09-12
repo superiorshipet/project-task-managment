@@ -29,7 +29,7 @@ class TeamController extends Controller
 
         $users = User::query()
             ->when(! $request->user()->isAdmin(), function ($query) use ($request): void {
-                $query->whereHas('assignedTasks.project', fn ($projects) => $projects->where('user_id', $request->user()->id));
+                $query->whereHas('assignedTasks.project', fn ($projects) => $projects->where('projects.user_id', $request->user()->id));
             })
             ->when($request->user()->isAdmin() && $request->filled('role'), fn ($query) => $query->where('role', $request->string('role')->toString()))
             ->when($keyword !== '', fn ($query) => $query->where(function ($query) use ($keyword): void {
@@ -103,6 +103,6 @@ class TeamController extends Controller
             return $tasks;
         }
 
-        return $tasks->whereHas('project', fn ($projects) => $projects->where('user_id', $request->user()->id));
+        return $tasks->whereHas('project', fn ($projects) => $projects->where('projects.user_id', $request->user()->id));
     }
 }
