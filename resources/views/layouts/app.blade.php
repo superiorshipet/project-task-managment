@@ -12,16 +12,15 @@
 </head>
 <body class="min-h-screen bg-[#f6f7fb] font-sans text-gray-950 antialiased">
     <div class="flex min-h-screen">
+        @auth
         <aside class="sticky top-0 hidden h-screen w-72 shrink-0 overflow-hidden border-r border-white/10 bg-[#1f2029] text-white lg:flex">
             <div class="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 py-6">
-                @auth
-                    @php
-                        $unreadNotificationsCount = \App\Models\WorkspaceNotification::query()
-                            ->visibleTo(auth()->user())
-                            ->unread()
-                            ->count();
-                    @endphp
-                @endauth
+                @php
+                    $unreadNotificationsCount = \App\Models\WorkspaceNotification::query()
+                        ->visibleTo(auth()->user())
+                        ->unread()
+                        ->count();
+                @endphp
 
                 <div class="mb-6">
                     <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="h-20 w-full object-contain object-left">
@@ -61,7 +60,6 @@
                     @endif
                 </nav>
 
-            @auth
                 @php
                     $sidebarProjects = \App\Models\Project::query()
                         ->visibleTo(auth()->user())
@@ -125,9 +123,9 @@
                         @endfor
                     </div>
                 </div>
-            @endauth
             </div>
         </aside>
+        @endauth
 
         <main class="min-w-0 flex-1">
             <header class="sticky top-0 z-20 border-b border-gray-200/80 bg-white/85 px-4 py-4 backdrop-blur md:px-8">
@@ -220,7 +218,7 @@
                     <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('status') }}</div>
                 @endif
 
-                @if ($errors->any())
+                @if (isset($errors) && $errors->any())
                     <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                         <p class="font-semibold">Please review the highlighted fields.</p>
                         <ul class="mt-2 list-inside list-disc">
