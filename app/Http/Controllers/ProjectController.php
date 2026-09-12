@@ -152,7 +152,10 @@ class ProjectController extends Controller
     private function cachedTaskBoard($query, Request $request, int $projectId)
     {
         $version = Cache::get("project.board.version.{$projectId}", 1);
-        $filters = $request->only(['q', 'status', 'assigned_to']);
+        $filters = collect($request->only(['q', 'status', 'assigned_to']))
+            ->map(fn ($value) => is_string($value) ? trim($value) : $value)
+            ->filter(fn ($value) => filled($value))
+            ->all();
         $key = 'project.board.ids.'.md5(json_encode([
             'project_id' => $projectId,
             'user_id' => $request->user()->id,

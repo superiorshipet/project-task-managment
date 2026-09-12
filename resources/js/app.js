@@ -10,6 +10,28 @@ function debounce(callback, delay = 110) {
     };
 }
 
+function liveSearchUrl(form) {
+    const url = new URL(form.action || window.location.pathname, window.location.origin);
+    const params = new URLSearchParams();
+
+    new FormData(form).forEach((value, key) => {
+        const normalized = String(value).trim();
+
+        if (normalized !== '') {
+            params.set(key, normalized);
+        }
+    });
+
+    const displayParams = new URLSearchParams(params);
+    params.set('partial', form.dataset.livePartial || '1');
+    url.search = params.toString();
+
+    return {
+        requestUrl: url.toString(),
+        displayUrl: displayParams.toString() ? `${url.pathname}?${displayParams.toString()}` : url.pathname,
+    };
+}
+
 function liveSearch(form) {
     const target = document.querySelector(form.dataset.liveTarget);
 
@@ -23,13 +45,10 @@ function liveSearch(form) {
     const controller = new AbortController();
     liveSearchControllers.set(form, controller);
 
-    const params = new URLSearchParams(new FormData(form));
-    params.set('partial', form.dataset.livePartial || '1');
-
-    const url = `${form.action || window.location.pathname}?${params.toString()}`;
+    const { requestUrl, displayUrl } = liveSearchUrl(form);
     target.classList.add('opacity-60');
 
-    fetch(url, {
+    fetch(requestUrl, {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
         },
@@ -44,10 +63,7 @@ function liveSearch(form) {
         })
         .then((html) => {
             target.innerHTML = html;
-            const displayParams = new URLSearchParams(params);
-            displayParams.delete('partial');
-            const displayQuery = displayParams.toString();
-            window.history.replaceState({}, '', displayQuery ? `${window.location.pathname}?${displayQuery}` : window.location.pathname);
+            window.history.replaceState({}, '', displayUrl);
         })
         .catch((error) => {
             if (error.name !== 'AbortError') {
