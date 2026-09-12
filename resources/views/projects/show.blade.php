@@ -40,9 +40,8 @@
             <nav class="flex gap-6 text-sm font-semibold text-gray-500">
                 @foreach ([
                     'board' => ['Task Board', $project->tasks_count],
-                    'timeline' => ['Timeline', $timelineTasks->count()],
                     'files' => ['Files', $projectFiles->count()],
-                    'mentions' => ['Mentions', $mentions->count()],
+                    'mentions' => ['Mentions', $projectMessages->count()],
                     'whiteboard' => ['Whiteboard', null],
                 ] as $tab => [$label, $count])
                     <a href="{{ $tab === 'whiteboard' ? route('projects.whiteboard.show', $project) : route('projects.show', ['project' => $project, 'tab' => $tab]) }}" class="{{ $activeTab === $tab ? 'border-slate-950 text-slate-950' : 'border-transparent text-gray-500' }} border-b-2 pb-3 transition hover:text-slate-950">
@@ -90,21 +89,6 @@
 
     @if ($activeTab === 'board')
         @include('tasks._board', ['project' => $project, 'projects' => collect([$project])])
-    @elseif ($activeTab === 'timeline')
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div class="space-y-3">
-                @foreach ($timelineTasks as $task)
-                    <div class="grid gap-3 rounded-xl border border-gray-100 p-4 md:grid-cols-[160px_1fr_140px]">
-                        <span class="text-sm font-semibold text-gray-500">{{ $task->due_date?->format('d M Y') ?? 'No due date' }}</span>
-                        <div>
-                            <p class="font-semibold">{{ $task->title }}</p>
-                            <p class="text-sm text-gray-500">{{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
-                        </div>
-                        <span class="rounded-full bg-gray-100 px-3 py-1 text-center text-xs font-semibold text-gray-600">{{ str($task->status)->replace('_', ' ')->title() }}</span>
-                    </div>
-                @endforeach
-            </div>
-        </div>
     @elseif ($activeTab === 'files')
         <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -119,16 +103,62 @@
             </div>
         </div>
     @else
-        <div class="space-y-3">
-            @forelse ($mentions as $mention)
-                <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="font-semibold">{{ $mention->title }}</p>
-                    <p class="mt-1 text-sm text-gray-500">{{ $mention->body }}</p>
-                    <p class="mt-3 text-xs font-semibold text-gray-400">{{ $mention->created_at->diffForHumans() }}</p>
-                </article>
-            @empty
-                <p class="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No mentions or updates for this project yet.</p>
-            @endforelse
+        <div class="grid gap-4 xl:grid-cols-[1fr_320px]">
+            <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-5 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold">Project chat</h3>
+                        <p class="text-sm text-gray-500">Use @handle to notify a teammate.</p>
+                    </div>
+                    <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $projectMessages->count() }} messages</span>
+                </div>
+
+                <div class="mb-5 max-h-[520px] space-y-3 overflow-y-auto rounded-2xl bg-gray-50 p-3">
+                    @forelse ($projectMessages as $message)
+                        <article class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-bold text-white">{{ str($message->user->name)->substr(0, 2)->upper() }}</span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-bold text-gray-950">{{ $message->user->name }}</p>
+                                        <p class="text-xs font-semibold text-gray-400">{{ $message->created_at->diffForHumans() }}</p>
+                                    </div>
+                                </div>
+                                @if (filled($message->mentioned_user_ids))
+                                    <span class="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Mention</span>
+                                @endif
+                            </div>
+                            <p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600">{{ $message->body }}</p>
+                        </article>
+                    @empty
+                        <p class="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No chat messages yet.</p>
+                    @endforelse
+                </div>
+
+                <form method="POST" action="{{ route('projects.messages.store', $project) }}" class="space-y-3">
+                    @csrf
+                    <textarea name="body" rows="4" required maxlength="3000" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-400" placeholder="Write a message... try {{ '@'.Str::of($mentionableUsers->first()?->name ?? 'teammate')->lower()->replace(' ', '.') }}"></textarea>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-xs font-semibold text-gray-400">Mentions create notifications for the mentioned user.</p>
+                        <button class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Send message</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <h3 class="text-lg font-bold">Mention handles</h3>
+                <div class="mt-4 space-y-2">
+                    @foreach ($mentionableUsers as $mentionableUser)
+                        @php
+                            $handle = Str::of($mentionableUser->name)->lower()->replaceMatches('/[^a-z0-9\s._-]/', '')->squish()->replace(' ', '.');
+                        @endphp
+                        <div class="rounded-xl border border-gray-100 p-3">
+                            <p class="font-semibold text-gray-950">{{ $mentionableUser->name }}</p>
+                            <p class="mt-1 text-sm font-semibold text-indigo-600">@{{ $handle }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </aside>
         </div>
     @endif
 @endsection

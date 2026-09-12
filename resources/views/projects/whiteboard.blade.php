@@ -36,7 +36,6 @@
             <nav class="flex gap-6 text-sm font-semibold text-gray-500">
                 @foreach ([
                     'board' => ['Task Board', $project->tasks_count],
-                    'timeline' => ['Timeline', null],
                     'files' => ['Files', null],
                     'mentions' => ['Mentions', null],
                     'whiteboard' => ['Whiteboard', null],

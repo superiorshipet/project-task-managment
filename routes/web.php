@@ -9,6 +9,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectFavoriteController;
 use App\Http\Controllers\ProjectInvitationController;
+use App\Http\Controllers\ProjectMessageController;
 use App\Http\Controllers\ProjectWhiteboardController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
@@ -40,6 +41,7 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/team/{user}', [TeamController::class, 'destroy'])->name('team.destroy');
     Route::delete('/projects/{project}/users/{user}', [TeamController::class, 'removeFromProject'])->name('projects.users.destroy');
     Route::post('/projects/{project}/invitations', [ProjectInvitationController::class, 'store'])->name('projects.invitations.store');
+    Route::post('/projects/{project}/messages', [ProjectMessageController::class, 'store'])->name('projects.messages.store');
     Route::patch('/project-invitations/{invitation}/accept', [ProjectInvitationController::class, 'accept'])->name('project-invitations.accept');
 
     Route::resource('projects', ProjectController::class);

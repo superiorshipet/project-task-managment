@@ -50,7 +50,7 @@
                         <p class="mt-2 text-sm text-gray-600">{{ $notification->body }}</p>
                         <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-gray-500">
                             @if ($notification->project)
-                                <a href="{{ route('projects.show', $notification->project) }}" class="rounded-full bg-white px-3 py-1 text-indigo-600">{{ $notification->project->title }}</a>
+                                <a href="{{ route('projects.show', ['project' => $notification->project, 'tab' => $notification->type === 'project_mention' ? 'mentions' : 'board']) }}" class="rounded-full bg-white px-3 py-1 text-indigo-600">{{ $notification->project->title }}</a>
                             @endif
                             @if ($notification->task)
                                 <span class="rounded-full bg-white px-3 py-1">{{ $notification->task->title }}</span>

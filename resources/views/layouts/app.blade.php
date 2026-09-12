@@ -231,9 +231,14 @@
 
                                     <div class="max-h-96 overflow-y-auto p-2">
                                         @forelse ($headerNotifications as $notification)
+                                            @php
+                                                $notificationUrl = $notification->project
+                                                    ? route('projects.show', ['project' => $notification->project, 'tab' => $notification->type === 'project_mention' ? 'mentions' : 'board'])
+                                                    : route('notifications.index');
+                                            @endphp
                                             <div class="rounded-xl p-3 transition {{ $notification->read_at ? 'hover:bg-gray-50' : 'bg-indigo-50/60 hover:bg-indigo-50' }}">
                                                 <div class="flex items-start justify-between gap-3">
-                                                    <a href="{{ $notification->project ? route('projects.show', $notification->project) : route('notifications.index') }}" class="min-w-0 flex-1">
+                                                    <a href="{{ $notificationUrl }}" class="min-w-0 flex-1">
                                                         <div class="flex items-center gap-2">
                                                             <span class="size-2 shrink-0 rounded-full {{ $notification->read_at ? 'bg-gray-300' : 'bg-indigo-500' }}"></span>
                                                             <p class="truncate text-sm font-semibold text-gray-950">{{ $notification->title }}</p>

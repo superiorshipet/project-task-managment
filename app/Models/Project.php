@@ -58,6 +58,11 @@ class Project extends Model
         return $this->hasOne(ProjectWhiteboard::class);
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(ProjectMessage::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
         return FastSearch::apply($query, $keyword);

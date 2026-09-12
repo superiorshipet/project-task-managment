@@ -6,7 +6,7 @@ use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\WorkspaceNotification;
+use App\Models\User;
 use App\Support\WorkspaceLookups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -97,16 +97,26 @@ class ProjectController extends Controller
             ]);
         }
 
+        $project = $project->load(['owner:id,name,email,role', 'members:id,name,email,role'])->loadCount('tasks');
+        $mentionableUsers = collect([$project->owner])
+            ->merge($project->members)
+            ->merge(User::query()
+                ->whereIn('id', $project->tasks()->pluck('assigned_to')->filter())
+                ->get(['id', 'name', 'email', 'role']))
+            ->filter()
+            ->unique('id')
+            ->values();
+
         return view('projects.show', [
-            'project' => $project->load(['owner:id,name,email,role', 'members:id,name,email,role'])->loadCount('tasks'),
+            'project' => $project,
             'isFavorite' => $request->user()->favoriteProjects()->whereKey($project->id)->exists(),
             'tasksByStatus' => $tasks,
             'users' => $users,
             'statuses' => Task::STATUSES,
-            'activeTab' => $request->string('tab')->toString() ?: 'board',
-            'timelineTasks' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->with(['assignee:id,name,email,role', 'assignees:id,name,email,role'])->orderBy('due_date')->get(),
+            'activeTab' => $request->string('tab')->toString() === 'timeline' ? 'board' : ($request->string('tab')->toString() ?: 'board'),
             'projectFiles' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->whereNotNull('attachment')->with(['assignee:id,name,email,role', 'assignees:id,name,email,role'])->latest()->get(),
-            'mentions' => WorkspaceNotification::query()->visibleTo($request->user())->where('project_id', $project->id)->latest()->limit(20)->get(),
+            'projectMessages' => $project->messages()->with('user:id,name,email,role')->latest()->limit(50)->get()->reverse()->values(),
+            'mentionableUsers' => $mentionableUsers,
         ]);
     }
 
