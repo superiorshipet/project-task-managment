@@ -28,15 +28,18 @@ class ProjectController extends Controller
             ])
             ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+            ->when($request->boolean('favorite'), fn ($query) => $query->whereHas('favoritedBy', fn ($favorites) => $favorites->whereKey($request->user()->id)))
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
+        $favoriteProjectIds = $request->user()->favoriteProjects()->pluck('projects.id')->all();
+
         if ($request->boolean('partial')) {
-            return view('projects._grid', compact('projects'));
+            return view('projects._grid', compact('projects', 'favoriteProjectIds'));
         }
 
-        return view('projects.index', compact('projects'));
+        return view('projects.index', compact('projects', 'favoriteProjectIds'));
     }
 
     public function create(): View
@@ -91,6 +94,7 @@ class ProjectController extends Controller
 
         return view('projects.show', [
             'project' => $project->load(['owner:id,name,email,role'])->loadCount('tasks'),
+            'isFavorite' => $request->user()->favoriteProjects()->whereKey($project->id)->exists(),
             'tasksByStatus' => $tasks,
             'users' => $users,
             'statuses' => Task::STATUSES,

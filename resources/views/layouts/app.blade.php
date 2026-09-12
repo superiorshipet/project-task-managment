@@ -31,6 +31,15 @@
             </div>
 
             <div class="flex min-w-0 flex-1 flex-col px-5 py-6">
+                @auth
+                    @php
+                        $unreadNotificationsCount = \App\Models\WorkspaceNotification::query()
+                            ->visibleTo(auth()->user())
+                            ->unread()
+                            ->count();
+                    @endphp
+                @endauth
+
                 <div class="mb-6">
                     <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="h-12 w-full rounded-xl object-cover object-left">
                     <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Project Hub</p>
@@ -57,6 +66,10 @@
                         <span>Task Board</span>
                         <span class="text-slate-500">03</span>
                     </a>
+                    <a href="{{ route('notifications.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('notifications.*') ? 'bg-white/10' : '' }}">
+                        <span>Notifications</span>
+                        <span class="rounded-full {{ ($unreadNotificationsCount ?? 0) > 0 ? 'bg-rose-500 text-white' : 'text-slate-500' }} px-2 py-0.5 text-xs">{{ $unreadNotificationsCount ?? 0 }}</span>
+                    </a>
                     @if (auth()->user()->canManageProjects())
                         <a href="{{ route('team.index') }}" class="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-white/10 {{ request()->routeIs('team.*') ? 'bg-white/10' : '' }}">
                             <span>Team</span>
@@ -72,6 +85,12 @@
                         ->latest()
                         ->limit(5)
                         ->get();
+                    $favoriteProjects = auth()->user()
+                        ->favoriteProjects()
+                        ->visibleTo(auth()->user())
+                        ->latest('project_favorites.created_at')
+                        ->limit(5)
+                        ->get();
                 @endphp
                 <div class="mt-8">
                     <div class="mb-3 flex items-center justify-between px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -84,6 +103,22 @@
                                 <span class="mr-2 inline-block size-2 rounded-full bg-emerald-400"></span>{{ $sidebarProject->title }}
                             </a>
                         @endforeach
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <div class="mb-3 flex items-center justify-between px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <span>Favorite Projects</span>
+                        <span>{{ $favoriteProjects->count() }}</span>
+                    </div>
+                    <div class="space-y-1">
+                        @forelse ($favoriteProjects as $favoriteProject)
+                            <a href="{{ route('projects.show', $favoriteProject) }}" class="block truncate rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white">
+                                <span class="mr-2 inline-block size-2 rounded-full bg-violet-400"></span>{{ $favoriteProject->title }}
+                            </a>
+                        @empty
+                            <p class="px-3 py-2 text-xs text-slate-500">Star projects to pin them here.</p>
+                        @endforelse
                     </div>
                 </div>
 

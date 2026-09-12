@@ -3,6 +3,8 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProjectFavoriteController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
@@ -23,11 +25,15 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::delete('/team/{user}', [TeamController::class, 'destroy'])->name('team.destroy');
     Route::delete('/projects/{project}/users/{user}', [TeamController::class, 'removeFromProject'])->name('projects.users.destroy');
 
     Route::resource('projects', ProjectController::class);
+    Route::post('/projects/{project}/favorite', [ProjectFavoriteController::class, 'toggle'])->name('projects.favorite');
     Route::post('/projects/{project}/restore', [ProjectController::class, 'restore'])->name('projects.restore');
 
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

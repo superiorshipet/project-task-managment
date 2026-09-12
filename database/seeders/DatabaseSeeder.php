@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\WorkspaceNotification;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -67,7 +68,6 @@ class DatabaseSeeder extends Seeder
                 ]);
             });
 
-            return;
         }
 
         Project::query()
@@ -91,6 +91,46 @@ class DatabaseSeeder extends Seeder
                     'metadata' => [
                         'labels' => $index % 2 === 0 ? ['ui', 'review'] : ['api', 'database'],
                         'tags' => $index % 2 === 0 ? ['design', 'qa'] : ['backend', 'urgent'],
+                    ],
+                ]);
+            });
+
+        $this->seedWorkspaceFeatures();
+    }
+
+    private function seedWorkspaceFeatures(): void
+    {
+        if (\DB::table('project_favorites')->count() === 0) {
+            User::query()
+                ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_PROJECT_MANAGER])
+                ->get()
+                ->each(function (User $user): void {
+                    $projectIds = Project::query()->visibleTo($user)->limit(2)->pluck('id');
+                    $user->favoriteProjects()->syncWithoutDetaching($projectIds);
+                });
+        }
+
+        if (WorkspaceNotification::query()->exists()) {
+            return;
+        }
+
+        Task::query()
+            ->with(['assignee', 'project'])
+            ->whereNotNull('assigned_to')
+            ->limit(12)
+            ->get()
+            ->each(function (Task $task): void {
+                WorkspaceNotification::query()->create([
+                    'user_id' => $task->assigned_to,
+                    'project_id' => $task->project_id,
+                    'task_id' => $task->id,
+                    'type' => 'task_assigned',
+                    'title' => 'Task activity',
+                    'body' => "{$task->title} is active in your workspace.",
+                    'data' => [
+                        'task_title' => $task->title,
+                        'project_title' => $task->project?->title,
+                        'status' => $task->status,
                     ],
                 ]);
             });

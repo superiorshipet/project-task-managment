@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateTaskStatusRequest;
 use App\Mail\TaskAssignedMail;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\WorkspaceNotifier;
 use App\Support\WorkspaceLookups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -63,6 +64,7 @@ class TaskController extends Controller
         $task = Task::create($data);
         $this->touchTaskBoardCaches($task->project_id);
         $this->sendAssignmentEmail($task);
+        WorkspaceNotifier::taskAssigned($task);
 
         return back()->with('status', 'Task created successfully.');
     }
@@ -109,6 +111,7 @@ class TaskController extends Controller
 
         if ($task->assigned_to && $task->assigned_to !== $oldAssignee) {
             $this->sendAssignmentEmail($task);
+            WorkspaceNotifier::taskAssigned($task);
         }
 
         return redirect()->route('projects.show', $task->project)->with('status', 'Task updated successfully.');
@@ -117,6 +120,7 @@ class TaskController extends Controller
     public function updateStatus(UpdateTaskStatusRequest $request, Task $task): JsonResponse|RedirectResponse
     {
         $status = $request->validated('status');
+        $previousStatus = $task->status;
         $progress = $this->progressFor($status, $task->progress);
 
         $task->update([
@@ -124,6 +128,10 @@ class TaskController extends Controller
             'progress' => $progress,
         ]);
         $this->touchTaskBoardCaches($task->project_id);
+
+        if ($previousStatus !== $status) {
+            WorkspaceNotifier::taskStatusChanged($task, $request->user(), $previousStatus);
+        }
 
         if ($request->ajax()) {
             return response()->json([

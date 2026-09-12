@@ -10,7 +10,10 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-2xl font-bold tracking-tight">{{ $project->title }}</h1>
-                    <span class="text-amber-400">☆</span>
+                    <form method="POST" action="{{ route('projects.favorite', $project) }}">
+                        @csrf
+                        <button class="text-xl text-amber-400 transition hover:scale-110" aria-label="Toggle favorite">{{ $isFavorite ? '★' : '☆' }}</button>
+                    </form>
                 </div>
                 <p class="mt-1 max-w-3xl text-sm text-gray-500">{{ $project->description ?: 'Design tasks such as themes, dashboards, and launch workflows.' }}</p>
                 <div class="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
