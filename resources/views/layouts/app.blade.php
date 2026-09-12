@@ -12,24 +12,7 @@
 </head>
 <body class="min-h-screen bg-[#f6f7fb] font-sans text-gray-950 antialiased">
     <div class="flex min-h-screen">
-        <aside class="sticky top-0 hidden h-screen w-80 shrink-0 overflow-hidden border-r border-white/10 bg-[#1f2029] text-white lg:flex">
-            <div class="flex h-screen w-16 flex-col items-center gap-4 overflow-hidden border-r border-white/10 bg-[#191a22] py-6">
-                <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="size-9 rounded-xl object-cover shadow-lg shadow-indigo-500/20">
-                <a href="{{ route('dashboard') }}" class="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white {{ request()->routeIs('dashboard') ? 'bg-white/10 text-white' : '' }}">⌂</a>
-                <a href="{{ route('projects.index') }}" class="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white {{ request()->routeIs('projects.*') ? 'bg-white/10 text-white' : '' }}">▦</a>
-                <a href="{{ route('tasks.index') }}" class="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white {{ request()->routeIs('tasks.*') ? 'bg-white/10 text-white' : '' }}">☰</a>
-                @if (auth()->user()->canManageProjects())
-                    <a href="{{ route('team.index') }}" class="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white {{ request()->routeIs('team.*') ? 'bg-white/10 text-white' : '' }}">♟</a>
-                @endif
-                <div class="mt-auto grid gap-3">
-                    <span class="grid size-9 place-items-center rounded-xl text-slate-400">?</span>
-                    <span class="grid size-9 place-items-center rounded-xl text-slate-400">⚙</span>
-                    <div class="grid size-9 place-items-center rounded-full bg-indigo-500 text-xs font-bold ring-2 ring-emerald-400">
-                        {{ str(auth()->user()->name ?? 'T')->substr(0, 1)->upper() }}
-                    </div>
-                </div>
-            </div>
-
+        <aside class="sticky top-0 hidden h-screen w-72 shrink-0 overflow-hidden border-r border-white/10 bg-[#1f2029] text-white lg:flex">
             <div class="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 py-6">
                 @auth
                     @php

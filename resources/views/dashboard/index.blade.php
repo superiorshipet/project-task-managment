@@ -5,6 +5,43 @@
 @section('page-title', 'Design Management')
 
 @section('content')
+    @if (auth()->user()->isAdmin() || auth()->user()->isProjectManager())
+        <section class="mb-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-lg font-semibold">{{ auth()->user()->isAdmin() ? 'Admin Workspace' : 'Manager Workspace' }}</h3>
+                    <p class="mt-1 text-sm text-gray-500">Centralized controls for the workspace.</p>
+                </div>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ str(auth()->user()->role)->replace('_', ' ')->title() }}</span>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                @can('create', \App\Models\Project::class)
+                    <a href="{{ route('projects.create') }}" class="rounded-xl border border-gray-200 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
+                        <p class="text-sm font-semibold text-gray-500">Create</p>
+                        <p class="mt-2 font-bold">New Project</p>
+                    </a>
+                @endcan
+                <a href="{{ route('projects.index') }}" class="rounded-xl border border-gray-200 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
+                    <p class="text-sm font-semibold text-gray-500">Manage</p>
+                    <p class="mt-2 font-bold">Projects</p>
+                </a>
+                <a href="{{ route('tasks.index') }}" class="rounded-xl border border-gray-200 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
+                    <p class="text-sm font-semibold text-gray-500">Board</p>
+                    <p class="mt-2 font-bold">Task Board</p>
+                </a>
+                <a href="{{ route('team.index') }}" class="rounded-xl border border-gray-200 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
+                    <p class="text-sm font-semibold text-gray-500">People</p>
+                    <p class="mt-2 font-bold">Team & Users</p>
+                </a>
+                <a href="{{ route('notifications.index') }}" class="rounded-xl border border-gray-200 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
+                    <p class="text-sm font-semibold text-gray-500">Center</p>
+                    <p class="mt-2 font-bold">Notifications</p>
+                </a>
+            </div>
+        </section>
+    @endif
+
     <div class="grid gap-4 md:grid-cols-4">
         @foreach ([
             ['label' => 'Total Projects', 'value' => $totalProjects, 'tone' => 'bg-indigo-50 text-indigo-700'],
