@@ -14,6 +14,18 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLE_ADMIN = 'admin';
+
+    public const ROLE_PROJECT_MANAGER = 'project_manager';
+
+    public const ROLE_USER = 'user';
+
+    public const ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_PROJECT_MANAGER,
+        self::ROLE_USER,
+    ];
+
     protected $fillable = [
         'name',
         'email',
@@ -38,7 +50,28 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isProjectManager(): bool
+    {
+        return $this->role === self::ROLE_PROJECT_MANAGER;
+    }
+
+    public function isUser(): bool
+    {
+        return $this->role === self::ROLE_USER;
+    }
+
+    public function canManageProjects(): bool
+    {
+        return $this->isAdmin() || $this->isProjectManager();
+    }
+
+    public function canManageProject(Project $project): bool
+    {
+        return $this->isAdmin()
+            || ($this->isProjectManager() && $project->user_id === $this->id);
     }
 
     /**

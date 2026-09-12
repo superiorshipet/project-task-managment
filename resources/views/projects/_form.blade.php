@@ -1,5 +1,17 @@
 @csrf
 <div class="grid gap-5">
+    @if (auth()->user()?->isAdmin())
+        <div>
+            <label class="text-sm font-semibold text-gray-700">Project manager</label>
+            <select name="user_id" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400" required>
+                <option value="">Select manager</option>
+                @foreach ($projectManagers as $manager)
+                    <option value="{{ $manager->id }}" @selected((int) old('user_id', $project->user_id ?? 0) === $manager->id)>{{ $manager->name }}</option>
+                @endforeach
+            </select>
+        </div>
+    @endif
+
     <div>
         <label class="text-sm font-semibold text-gray-700">Project title</label>
         <input name="title" value="{{ old('title', $project->title ?? '') }}" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400" required>

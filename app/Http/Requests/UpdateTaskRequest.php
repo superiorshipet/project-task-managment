@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,7 @@ class UpdateTaskRequest extends FormRequest
     {
         return [
             'project_id' => ['required', 'exists:projects,id'],
-            'assigned_to' => ['nullable', 'exists:users,id'],
+            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where('role', User::ROLE_USER)],
             'title' => ['required', 'string', 'max:180'],
             'description' => ['nullable', 'string', 'max:4000'],
             'status' => ['required', Rule::in(Task::STATUSES)],

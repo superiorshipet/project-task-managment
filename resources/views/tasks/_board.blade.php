@@ -25,7 +25,9 @@
             <button class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Filter</button>
         </form>
 
-        <button type="button" @click="openTaskModal = true" class="rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">New Task</button>
+        @can('create', \App\Models\Task::class)
+            <button type="button" @click="openTaskModal = true" class="rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">New Task</button>
+        @endcan
     </div>
 
     <div class="grid gap-5 xl:grid-cols-3">
@@ -38,7 +40,9 @@
                         <h3 class="font-semibold">{{ $label }}</h3>
                         <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-500">{{ $columnTasks->count() }}</span>
                     </div>
-                    <button type="button" @click="openTaskModal = true" class="grid size-8 place-items-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800">+</button>
+                    @can('create', \App\Models\Task::class)
+                        <button type="button" @click="openTaskModal = true" class="grid size-8 place-items-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800">+</button>
+                    @endcan
                 </div>
 
                 <div class="space-y-4">
@@ -52,23 +56,25 @@
         @endforeach
     </div>
 
-    <div x-show="openTaskModal" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
-        <div @click.outside="openTaskModal = false" class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-            <div class="mb-5 flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quick create</p>
-                    <h3 class="text-xl font-bold">New task</h3>
+    @can('create', \App\Models\Task::class)
+        <div x-show="openTaskModal" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
+            <div @click.outside="openTaskModal = false" class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+                <div class="mb-5 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quick create</p>
+                        <h3 class="text-xl font-bold">New task</h3>
+                    </div>
+                    <button type="button" @click="openTaskModal = false" class="grid size-9 place-items-center rounded-xl border border-gray-200 text-gray-500 transition hover:bg-gray-50">x</button>
                 </div>
-                <button type="button" @click="openTaskModal = false" class="grid size-9 place-items-center rounded-xl border border-gray-200 text-gray-500 transition hover:bg-gray-50">x</button>
+                <form method="POST" action="{{ route('tasks.store') }}" enctype="multipart/form-data">
+                    @include('tasks._form', [
+                        'task' => null,
+                        'projects' => isset($project) && $project ? collect([$project]) : $projects,
+                        'users' => $users,
+                        'button' => 'Create Task'
+                    ])
+                </form>
             </div>
-            <form method="POST" action="{{ route('tasks.store') }}" enctype="multipart/form-data">
-                @include('tasks._form', [
-                    'task' => null,
-                    'projects' => isset($project) && $project ? collect([$project]) : $projects,
-                    'users' => $users,
-                    'button' => 'Create Task'
-                ])
-            </form>
         </div>
-    </div>
+    @endcan
 </div>

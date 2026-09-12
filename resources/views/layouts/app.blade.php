@@ -91,7 +91,9 @@
                     </div>
                     @auth
                         <div class="flex items-center gap-3">
-                            <a href="{{ route('projects.create') }}" class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">New Project</a>
+                            @can('create', \App\Models\Project::class)
+                                <a href="{{ route('projects.create') }}" class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">New Project</a>
+                            @endcan
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300">Logout</button>

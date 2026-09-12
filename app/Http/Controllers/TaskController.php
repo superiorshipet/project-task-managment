@@ -39,7 +39,7 @@ class TaskController extends Controller
         return view('tasks.index', [
             'tasksByStatus' => $tasks,
             'projects' => Project::query()->visibleTo($request->user())->orderBy('title')->get(),
-            'users' => User::query()->orderBy('name')->get(),
+            'users' => User::query()->where('role', User::ROLE_USER)->orderBy('name')->get(),
             'statuses' => Task::STATUSES,
         ]);
     }
@@ -68,7 +68,7 @@ class TaskController extends Controller
         return view('tasks.edit', [
             'task' => $task->load(['project', 'assignee']),
             'projects' => Project::query()->visibleTo(request()->user())->orderBy('title')->get(),
-            'users' => User::query()->orderBy('name')->get(),
+            'users' => User::query()->where('role', User::ROLE_USER)->orderBy('name')->get(),
         ]);
     }
 
@@ -76,7 +76,7 @@ class TaskController extends Controller
     {
         $targetProject = Project::query()->visibleTo($request->user())->findOrFail($request->integer('project_id'));
 
-        if (! $request->user()->isAdmin() && $targetProject->user_id !== $request->user()->id) {
+        if (! $request->user()->canManageProject($targetProject)) {
             abort(403);
         }
 

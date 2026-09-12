@@ -16,28 +16,32 @@ class TaskPolicy
     {
         return $user->isAdmin()
             || $task->assigned_to === $user->id
-            || $task->project->user_id === $user->id;
+            || ($user->isProjectManager() && $task->project->user_id === $user->id);
     }
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->canManageProjects();
     }
 
     public function update(User $user, Task $task): bool
     {
-        return $user->isAdmin()
-            || $task->assigned_to === $user->id
-            || $task->project->user_id === $user->id;
+        return $user->canManageProject($task->project);
+    }
+
+    public function updateStatus(User $user, Task $task): bool
+    {
+        return $user->canManageProject($task->project)
+            || $task->assigned_to === $user->id;
     }
 
     public function delete(User $user, Task $task): bool
     {
-        return $user->isAdmin() || $task->project->user_id === $user->id;
+        return $user->canManageProject($task->project);
     }
 
     public function restore(User $user, Task $task): bool
     {
-        return $user->isAdmin() || $task->project->user_id === $user->id;
+        return $user->canManageProject($task->project);
     }
 }

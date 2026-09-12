@@ -53,8 +53,13 @@ class Task extends Model
         }
 
         return $query->where(function (Builder $query) use ($user): void {
-            $query->where('assigned_to', $user->id)
-                ->orWhereHas('project', fn (Builder $projects) => $projects->where('user_id', $user->id));
+            if ($user->isProjectManager()) {
+                $query->orWhereHas('project', fn (Builder $projects) => $projects->where('user_id', $user->id));
+
+                return;
+            }
+
+            $query->where('assigned_to', $user->id);
         });
     }
 }

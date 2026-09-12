@@ -43,7 +43,12 @@ class ProjectController extends Controller
     {
         $this->authorize('create', Project::class);
 
-        return view('projects.create');
+        return view('projects.create', [
+            'projectManagers' => User::query()
+                ->where('role', User::ROLE_PROJECT_MANAGER)
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 
     public function store(StoreProjectRequest $request): RedirectResponse
@@ -51,7 +56,9 @@ class ProjectController extends Controller
         $this->authorize('create', Project::class);
 
         $data = $request->validated();
-        $data['user_id'] = $request->user()->id;
+        $data['user_id'] = $request->user()->isAdmin()
+            ? $request->integer('user_id')
+            : $request->user()->id;
 
         if ($request->hasFile('cover_image')) {
             $data['cover_image'] = $request->file('cover_image')->store('projects/covers', 'public');
@@ -66,7 +73,7 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $users = User::query()->orderBy('name')->get();
+        $users = User::query()->where('role', User::ROLE_USER)->orderBy('name')->get();
 
         $tasks = Task::query()
             ->where('project_id', $project->id)
@@ -97,12 +104,21 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
 
-        return view('projects.edit', compact('project'));
+        return view('projects.edit', [
+            'project' => $project,
+            'projectManagers' => User::query()
+                ->where('role', User::ROLE_PROJECT_MANAGER)
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 
     public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
     {
         $data = $request->validated();
+        $data['user_id'] = $request->user()->isAdmin()
+            ? $request->integer('user_id')
+            : $project->user_id;
 
         if ($request->hasFile('cover_image')) {
             if ($project->cover_image) {

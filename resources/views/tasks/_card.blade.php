@@ -16,7 +16,9 @@
             <h4 class="font-semibold text-gray-950">{{ $task->title }}</h4>
             <p class="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{{ $task->description ?: 'No description.' }}</p>
         </div>
-        <a href="{{ route('tasks.edit', $task) }}" class="rounded-lg px-2 py-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">...</a>
+        @can('update', $task)
+            <a href="{{ route('tasks.edit', $task) }}" class="rounded-lg px-2 py-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">...</a>
+        @endcan
     </div>
 
     <div class="mt-4">
@@ -46,11 +48,13 @@
             </div>
             <span class="max-w-24 truncate text-xs font-medium text-gray-500">{{ $task->assignee?->name ?? 'Unassigned' }}</span>
         </div>
-        <form method="POST" action="{{ route('tasks.destroy', $task) }}">
-            @csrf
-            @method('DELETE')
-            <button class="rounded-lg px-2 py-1 text-xs font-semibold text-rose-500 opacity-0 transition hover:bg-rose-50 group-hover:opacity-100">Archive</button>
-        </form>
+        @can('delete', $task)
+            <form method="POST" action="{{ route('tasks.destroy', $task) }}">
+                @csrf
+                @method('DELETE')
+                <button class="rounded-lg px-2 py-1 text-xs font-semibold text-rose-500 opacity-0 transition hover:bg-rose-50 group-hover:opacity-100">Archive</button>
+            </form>
+        @endcan
     </div>
 
     <div class="mt-3 grid grid-cols-3 gap-1">

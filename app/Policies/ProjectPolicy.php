@@ -15,18 +15,18 @@ class ProjectPolicy
     public function view(User $user, Project $project): bool
     {
         return $user->isAdmin()
-            || $project->user_id === $user->id
+            || ($user->isProjectManager() && $project->user_id === $user->id)
             || $project->tasks()->where('assigned_to', $user->id)->exists();
     }
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->canManageProjects();
     }
 
     public function update(User $user, Project $project): bool
     {
-        return $user->isAdmin() || $project->user_id === $user->id;
+        return $user->canManageProject($project);
     }
 
     public function delete(User $user, Project $project): bool
@@ -36,6 +36,6 @@ class ProjectPolicy
 
     public function restore(User $user, Project $project): bool
     {
-        return $user->isAdmin() || $project->user_id === $user->id;
+        return $user->canManageProject($project);
     }
 }
