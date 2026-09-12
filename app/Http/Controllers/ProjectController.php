@@ -25,12 +25,7 @@ class ProjectController extends Controller
                 'tasks',
                 'tasks as completed_tasks_count' => fn ($query) => $query->where('status', 'completed'),
             ])
-            ->when($request->filled('q'), function ($query) use ($request): void {
-                $query->where(function ($query) use ($request): void {
-                    $query->where('title', 'like', '%'.$request->string('q').'%')
-                        ->orWhere('description', 'like', '%'.$request->string('q').'%');
-                });
-            })
+            ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->latest()
             ->paginate(12)
@@ -61,7 +56,7 @@ class ProjectController extends Controller
             : $request->user()->id;
 
         if ($request->hasFile('cover_image')) {
-            $data['cover_image'] = $request->file('cover_image')->store('projects/covers', 'public');
+            $data['cover_image'] = $request->file('cover_image')->store('projects/covers', config('filesystems.default'));
         }
 
         $project = Project::create($data);
@@ -79,12 +74,7 @@ class ProjectController extends Controller
             ->where('project_id', $project->id)
             ->visibleTo($request->user())
             ->with(['assignee', 'project'])
-            ->when($request->filled('q'), function ($query) use ($request): void {
-                $query->where(function ($query) use ($request): void {
-                    $query->where('title', 'like', '%'.$request->string('q').'%')
-                        ->orWhere('description', 'like', '%'.$request->string('q').'%');
-                });
-            })
+            ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
             ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'completed')")
@@ -122,10 +112,10 @@ class ProjectController extends Controller
 
         if ($request->hasFile('cover_image')) {
             if ($project->cover_image) {
-                Storage::disk('public')->delete($project->cover_image);
+                Storage::disk(config('filesystems.default'))->delete($project->cover_image);
             }
 
-            $data['cover_image'] = $request->file('cover_image')->store('projects/covers', 'public');
+            $data['cover_image'] = $request->file('cover_image')->store('projects/covers', config('filesystems.default'));
         }
 
         $project->update($data);

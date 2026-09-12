@@ -8,7 +8,7 @@
 
 <article class="group rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
     @if ($task->attachment && str($task->attachment)->endsWith(['jpg', 'jpeg', 'png', 'webp']))
-        <img src="{{ Storage::disk('public')->url($task->attachment) }}" alt="{{ $task->title }}" class="mb-3 h-32 w-full rounded-xl object-cover">
+        <img src="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" alt="{{ $task->title }}" loading="lazy" class="mb-3 h-32 w-full rounded-xl object-cover">
     @endif
 
     <div class="mb-2 flex items-start justify-between gap-3">
@@ -37,7 +37,7 @@
             <span class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-600">{{ $task->due_date->format('d M Y') }}</span>
         @endif
         @if ($task->attachment)
-            <a href="{{ Storage::disk('public')->url($task->attachment) }}" target="_blank" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">1 file</a>
+            <a href="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" target="_blank" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">1 file</a>
         @endif
     </div>
 

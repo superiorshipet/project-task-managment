@@ -26,6 +26,7 @@ class Task extends Model
         'due_date',
         'attachment',
         'progress',
+        'metadata',
     ];
 
     protected function casts(): array
@@ -33,6 +34,7 @@ class Task extends Model
         return [
             'due_date' => 'date',
             'progress' => 'integer',
+            'metadata' => 'array',
         ];
     }
 
@@ -44,6 +46,20 @@ class Task extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function scopeSearch(Builder $query, ?string $keyword): Builder
+    {
+        if (! $keyword) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($keyword): void {
+            $query->where('title', 'like', "%{$keyword}%")
+                ->orWhere('description', 'like', "%{$keyword}%")
+                ->orWhereJsonContains('metadata->tags', $keyword)
+                ->orWhereJsonContains('metadata->labels', $keyword);
+        });
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

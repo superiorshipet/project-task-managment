@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Requests\UpdateTaskStatusRequest;
+use App\Mail\TaskAssignedMail;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -22,12 +24,7 @@ class TaskController extends Controller
         $tasks = Task::query()
             ->visibleTo($request->user())
             ->with(['project', 'assignee'])
-            ->when($request->filled('q'), function ($query) use ($request): void {
-                $query->where(function ($query) use ($request): void {
-                    $query->where('title', 'like', '%'.$request->string('q').'%')
-                        ->orWhere('description', 'like', '%'.$request->string('q').'%');
-                });
-            })
+            ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
             ->when($request->filled('assigned_to'), fn ($query) => $query->where('assigned_to', $request->integer('assigned_to')))
@@ -53,10 +50,11 @@ class TaskController extends Controller
         $data['progress'] = $this->progressFor($data['status'], (int) ($data['progress'] ?? 0));
 
         if ($request->hasFile('attachment')) {
-            $data['attachment'] = $request->file('attachment')->store('tasks/attachments', 'public');
+            $data['attachment'] = $request->file('attachment')->store('tasks/attachments', config('filesystems.default'));
         }
 
-        Task::create($data);
+        $task = Task::create($data);
+        $this->sendAssignmentEmail($task);
 
         return back()->with('status', 'Task created successfully.');
     }
@@ -85,13 +83,19 @@ class TaskController extends Controller
 
         if ($request->hasFile('attachment')) {
             if ($task->attachment) {
-                Storage::disk('public')->delete($task->attachment);
+                Storage::disk(config('filesystems.default'))->delete($task->attachment);
             }
 
-            $data['attachment'] = $request->file('attachment')->store('tasks/attachments', 'public');
+            $data['attachment'] = $request->file('attachment')->store('tasks/attachments', config('filesystems.default'));
         }
 
+        $oldAssignee = $task->assigned_to;
+
         $task->update($data);
+
+        if ($task->assigned_to && $task->assigned_to !== $oldAssignee) {
+            $this->sendAssignmentEmail($task);
+        }
 
         return redirect()->route('projects.show', $task->project)->with('status', 'Task updated successfully.');
     }
@@ -135,5 +139,16 @@ class TaskController extends Controller
             'completed' => 100,
             default => $progress,
         };
+    }
+
+    private function sendAssignmentEmail(Task $task): void
+    {
+        $task->loadMissing(['assignee', 'project']);
+
+        if (! $task->assignee?->email) {
+            return;
+        }
+
+        Mail::to($task->assignee->email)->send(new TaskAssignedMail($task));
     }
 }

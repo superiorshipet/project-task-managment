@@ -9,7 +9,7 @@
         <div class="grid gap-0 lg:grid-cols-[320px_1fr]">
             <div class="h-56 bg-gray-100 lg:h-auto">
                 @if ($project->cover_image)
-                    <img src="{{ Storage::disk('public')->url($project->cover_image) }}" alt="{{ $project->title }}" class="h-full w-full object-cover">
+                    <img src="{{ Storage::disk(config('filesystems.default'))->url($project->cover_image) }}" alt="{{ $project->title }}" loading="lazy" class="h-full w-full object-cover">
                 @else
                     <div class="flex h-full items-center justify-center bg-gradient-to-br from-slate-950 via-slate-800 to-indigo-500 text-white">
                         <span class="text-4xl font-bold">{{ str($project->title)->substr(0, 2)->upper() }}</span>

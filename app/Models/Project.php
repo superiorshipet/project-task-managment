@@ -19,7 +19,15 @@ class Project extends Model
         'description',
         'cover_image',
         'status',
+        'metadata',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'metadata' => 'array',
+        ];
+    }
 
     public function owner(): BelongsTo
     {
@@ -29,6 +37,20 @@ class Project extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    public function scopeSearch(Builder $query, ?string $keyword): Builder
+    {
+        if (! $keyword) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($keyword): void {
+            $query->where('title', 'like', "%{$keyword}%")
+                ->orWhere('description', 'like', "%{$keyword}%")
+                ->orWhereJsonContains('metadata->tags', $keyword)
+                ->orWhereJsonContains('metadata->client', $keyword);
+        });
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

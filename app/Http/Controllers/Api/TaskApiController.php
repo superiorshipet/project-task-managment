@@ -18,6 +18,7 @@ class TaskApiController extends Controller
         $tasks = Task::query()
             ->visibleTo($request->user())
             ->with(['project', 'assignee'])
+            ->search($request->filled('q') ? $request->string('q')->toString() : null)
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
             ->latest()

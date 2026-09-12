@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -17,11 +18,19 @@ class DashboardController extends Controller
         $tasks = Task::query()->visibleTo($user);
         $projects = Project::query()->visibleTo($user);
 
+        $stats = Cache::remember(
+            "dashboard.stats.{$user->id}.{$user->role}",
+            now()->addMinutes(5),
+            fn () => [
+                'totalProjects' => (clone $projects)->count(),
+                'pendingTasks' => (clone $tasks)->where('status', 'pending')->count(),
+                'completedTasks' => (clone $tasks)->where('status', 'completed')->count(),
+                'teamMembers' => $this->teamMembersCount($user),
+            ],
+        );
+
         return view('dashboard.index', [
-            'totalProjects' => (clone $projects)->count(),
-            'pendingTasks' => (clone $tasks)->where('status', 'pending')->count(),
-            'completedTasks' => (clone $tasks)->where('status', 'completed')->count(),
-            'teamMembers' => $this->teamMembersCount($user),
+            ...$stats,
             'recentProjects' => Project::query()->visibleTo($user)->withCount('tasks')->latest()->limit(5)->get(),
             'upcomingTasks' => Task::query()->visibleTo($user)->with(['project', 'assignee'])->whereNotNull('due_date')->orderBy('due_date')->limit(6)->get(),
         ]);

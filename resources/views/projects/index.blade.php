@@ -24,7 +24,7 @@
             <a href="{{ route('projects.show', $project) }}" class="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="h-36 bg-gray-100">
                     @if ($project->cover_image)
-                        <img src="{{ Storage::disk('public')->url($project->cover_image) }}" alt="{{ $project->title }}" class="h-full w-full object-cover">
+                        <img src="{{ Storage::disk(config('filesystems.default'))->url($project->cover_image) }}" alt="{{ $project->title }}" loading="lazy" class="h-full w-full object-cover">
                     @else
                         <div class="flex h-full items-center justify-center bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-500 text-white">
                             <span class="text-lg font-semibold">{{ str($project->title)->substr(0, 2)->upper() }}</span>

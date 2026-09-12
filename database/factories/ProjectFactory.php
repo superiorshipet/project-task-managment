@@ -18,6 +18,10 @@ class ProjectFactory extends Factory
             'title' => fake()->randomElement(['Design Management', 'Client Portal', 'Marketing Launch', 'Mobile Redesign']).' '.fake()->numberBetween(1, 20),
             'description' => fake()->sentence(14),
             'status' => fake()->randomElement(['active', 'active', 'paused', 'completed']),
+            'metadata' => [
+                'client' => fake()->randomElement(['Taskari', 'Internal', 'Growth Team']),
+                'tags' => fake()->randomElements(['design', 'backend', 'crm', 'workflow', 'analytics'], 2),
+            ],
         ];
     }
 }

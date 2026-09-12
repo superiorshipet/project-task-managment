@@ -9,6 +9,7 @@ A Laravel MVC monolith for a modern project and task management workflow. It use
 - Node.js 20+ for the current local build, preferably Node.js 22+ to match all package engine warnings
 - MySQL
 - PHP `pdo_mysql` extension
+- Redis server for production cache
 
 ## Setup
 
@@ -24,6 +25,57 @@ php artisan serve
 ```
 
 Update `.env` with the real MySQL host, database, username, and password. Do not commit `.env`.
+
+The project intentionally keeps only the domain tables in MySQL:
+
+```text
+users
+projects
+tasks
+migrations
+```
+
+Sessions use files, queues run synchronously, and cache uses Redis:
+
+```env
+SESSION_DRIVER=file
+QUEUE_CONNECTION=sync
+CACHE_STORE=redis
+REDIS_CLIENT=predis
+```
+
+## Cloudflare R2
+
+File uploads use the configured default filesystem disk. Local development can keep:
+
+```env
+FILESYSTEM_DISK=public
+```
+
+For Cloudflare R2, fill the R2 credentials and switch:
+
+```env
+FILESYSTEM_DISK=r2
+CLOUDFLARE_R2_ACCESS_KEY_ID=
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=
+CLOUDFLARE_R2_BUCKET=
+CLOUDFLARE_R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+CLOUDFLARE_R2_URL=https://<public-bucket-domain>
+```
+
+## Mail
+
+The default sender address is:
+
+```env
+MAIL_FROM_ADDRESS=superiorshipet@gmail.com
+```
+
+Use real SMTP credentials in `.env` before sending emails from production.
+
+## Search
+
+Project and task search checks normal columns and JSON metadata tags/labels, so keywords like `design`, `backend`, `qa`, and `workflow` are searchable.
 
 Seeded admin account:
 

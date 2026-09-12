@@ -74,7 +74,25 @@ class DatabaseSeeder extends Seeder
             ->orderBy('id')
             ->get()
             ->each(function (Project $project, int $index) use ($managers): void {
-                $project->update(['user_id' => $managers[$index % $managers->count()]->id]);
+                $project->update([
+                    'user_id' => $managers[$index % $managers->count()]->id,
+                    'metadata' => $project->metadata ?: [
+                        'client' => $index % 2 === 0 ? 'Taskari' : 'Internal',
+                        'tags' => $index % 2 === 0 ? ['design', 'workflow'] : ['backend', 'analytics'],
+                    ],
+                ]);
+            });
+
+        Task::query()
+            ->whereNull('metadata')
+            ->get()
+            ->each(function (Task $task, int $index): void {
+                $task->update([
+                    'metadata' => [
+                        'labels' => $index % 2 === 0 ? ['ui', 'review'] : ['api', 'database'],
+                        'tags' => $index % 2 === 0 ? ['design', 'qa'] : ['backend', 'urgent'],
+                    ],
+                ]);
             });
     }
 }

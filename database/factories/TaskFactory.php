@@ -29,6 +29,10 @@ class TaskFactory extends Factory
                 'in_progress' => fake()->numberBetween(30, 85),
                 'completed' => 100,
             },
+            'metadata' => [
+                'labels' => fake()->randomElements(['ui', 'api', 'review', 'database', 'upload'], 2),
+                'tags' => fake()->randomElements(['design', 'backend', 'urgent', 'blocked', 'qa'], 2),
+            ],
         ];
     }
 }
