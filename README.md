@@ -73,6 +73,18 @@ MAIL_FROM_ADDRESS=superiorshipet@gmail.com
 
 Use real SMTP credentials in `.env` before sending emails from production.
 
+## Cloudflare Turnstile
+
+Turnstile is wired for login and registration, but disabled by default until a real domain is ready:
+
+```env
+TURNSTILE_ENABLED=false
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+```
+
+Set `TURNSTILE_ENABLED=true` after creating a Cloudflare Turnstile widget for the production domain.
+
 ## Search
 
 Project and task search checks normal columns and JSON metadata tags/labels, so keywords like `design`, `backend`, `qa`, and `workflow` are searchable.

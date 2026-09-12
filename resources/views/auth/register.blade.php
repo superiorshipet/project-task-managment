@@ -24,6 +24,7 @@
                 <label class="text-sm font-semibold text-gray-700">Confirm Password</label>
                 <input name="password_confirmation" type="password" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400" required>
             </div>
+            <x-turnstile />
             <button class="w-full rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white transition hover:bg-slate-800">Create account</button>
         </form>
         <p class="mt-4 text-center text-sm text-gray-500">Already registered? <a href="{{ route('login') }}" class="font-semibold text-indigo-600">Login</a></p>

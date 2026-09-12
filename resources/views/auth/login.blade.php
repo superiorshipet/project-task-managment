@@ -20,6 +20,7 @@
                 <input name="remember" type="checkbox" value="1" class="rounded border-gray-300">
                 Remember me
             </label>
+            <x-turnstile />
             <button class="w-full rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white transition hover:bg-slate-800">Login</button>
         </form>
         <p class="mt-4 text-center text-sm text-gray-500">No account? <a href="{{ route('register') }}" class="font-semibold text-indigo-600">Create one</a></p>
