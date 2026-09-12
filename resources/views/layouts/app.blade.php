@@ -152,7 +152,10 @@
                         <div class="flex items-center gap-3">
                             <div class="relative" x-data="{ openNotifications: false }" @click.outside="openNotifications = false">
                                 <button type="button" @click="openNotifications = ! openNotifications" class="relative grid size-10 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:bg-gray-50" aria-label="Notifications">
-                                    <span>⌁</span>
+                                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                    </svg>
                                     @if ($headerUnreadNotificationsCount > 0)
                                         <span class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{{ $headerUnreadNotificationsCount }}</span>
                                     @endif
