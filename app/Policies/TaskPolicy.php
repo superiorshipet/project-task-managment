@@ -30,9 +30,7 @@ class TaskPolicy
 
     public function updateStatus(User $user, Task $task): bool
     {
-        return $user->canManageProject($task->project)
-            || $task->assigned_to === $user->id
-            || $task->assignees()->whereKey($user->id)->exists();
+        return $user->canViewProject($task->project);
     }
 
     public function delete(User $user, Task $task): bool

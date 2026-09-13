@@ -127,7 +127,7 @@
                         <article class="rounded-xl border border-gray-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
                             <a href="{{ $file->url() }}" target="_blank" class="block min-w-0">
                                 <p class="truncate font-semibold">{{ $file->original_name }}</p>
-                                <p class="mt-1 text-sm text-gray-500">{{ $file->humanSize() }} · {{ $file->user?->name ?? 'Deleted user' }}</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ $file->humanSize() }} · Uploaded by {{ $file->user?->name ?? 'Deleted user' }}</p>
                                 <p class="mt-2 text-[11px] font-semibold text-gray-400">{{ $file->created_at->diffForHumans() }}</p>
                             </a>
                             @if (auth()->user()->canManageProject($project) || auth()->user()->is($file->user))
@@ -153,7 +153,7 @@
                 @forelse ($taskFiles as $task)
                     <a href="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" target="_blank" class="rounded-xl border border-gray-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
                         <p class="font-semibold">{{ basename($task->attachment) }}</p>
-                        <p class="mt-1 text-sm text-gray-500">{{ $task->title }} · {{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
+                        <p class="mt-1 text-sm text-gray-500">Attached to {{ $task->title }} · {{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
                     </a>
                 @empty
                     <p class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 md:col-span-2 xl:col-span-3">No task attachments yet.</p>
