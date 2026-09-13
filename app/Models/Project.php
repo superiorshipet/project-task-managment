@@ -63,6 +63,11 @@ class Project extends Model
         return $this->hasMany(ProjectMessage::class);
     }
 
+    public function files(): HasMany
+    {
+        return $this->hasMany(ProjectFile::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
         return FastSearch::apply($query, $keyword);

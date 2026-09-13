@@ -1,7 +1,7 @@
-<div class="grid gap-5 xl:grid-cols-3">
+<div class="grid gap-4 lg:gap-5 xl:grid-cols-3">
     @foreach (['todo' => ['To Do', 'bg-rose-400'], 'in_progress' => ['In Progress', 'bg-amber-400'], 'completed' => ['Completed', 'bg-emerald-400']] as $status => [$label, $dot])
         @php($columnTasks = $tasksByStatus->get($status, collect()))
-        <section class="min-h-[620px] rounded-xl border border-gray-200 bg-[#f3f4f7] p-3 transition" data-status-column="{{ $status }}">
+        <section class="min-h-[360px] rounded-xl border border-gray-200 bg-[#f3f4f7] p-3 transition sm:min-h-[460px] xl:min-h-[620px]" data-status-column="{{ $status }}">
             <div class="mb-4 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="size-2 rounded-full {{ $dot }}"></span>

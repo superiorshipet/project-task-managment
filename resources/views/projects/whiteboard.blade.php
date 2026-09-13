@@ -9,11 +9,11 @@
         $projectProgress = $project->tasks_count ? round(($project->completed_tasks_count / $project->tasks_count) * 100) : 0;
     @endphp
 
-    <div class="mb-5 border-b border-gray-200 bg-white px-5 pt-5 shadow-sm">
+    <div class="mb-5 border-b border-gray-200 bg-white px-4 pt-5 shadow-sm sm:px-5">
         <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-bold tracking-tight">{{ $project->title }}</h1>
+            <div class="min-w-0 flex-1">
+                <div class="flex min-w-0 items-center gap-2">
+                    <h1 class="min-w-0 truncate text-xl font-bold tracking-tight sm:text-2xl">{{ $project->title }}</h1>
                     <form method="POST" action="{{ route('projects.favorite', $project) }}">
                         @csrf
                         <button class="text-xl text-amber-400 transition hover:scale-110" aria-label="Toggle favorite">{{ $isFavorite ? '★' : '☆' }}</button>
@@ -36,7 +36,7 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                 <a href="{{ route('notifications.index', ['type' => 'task_status_changed']) }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Updates</a>
                 <button type="button" onclick="navigator.clipboard.writeText(window.location.href)" class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">Share</button>
                 @can('update', $project)
@@ -46,14 +46,14 @@
         </div>
 
         <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <nav class="flex gap-6 text-sm font-semibold text-gray-500">
+            <nav class="-mx-4 flex w-[calc(100%+2rem)] gap-5 overflow-x-auto px-4 text-sm font-semibold text-gray-500 sm:mx-0 sm:w-auto sm:gap-6 sm:px-0">
                 @foreach ([
                     'board' => ['Task Board', $project->tasks_count],
                     'files' => ['Files', null],
                     'mentions' => ['Mentions', null],
                     'whiteboard' => ['Whiteboard', null],
                 ] as $tab => [$label, $count])
-                    <a href="{{ $tab === 'whiteboard' ? route('projects.whiteboard.show', $project) : route('projects.show', ['project' => $project, 'tab' => $tab]) }}" class="{{ $activeTab === $tab ? 'border-slate-950 text-slate-950' : 'border-transparent text-gray-500' }} border-b-2 pb-3 transition hover:text-slate-950">
+                    <a href="{{ $tab === 'whiteboard' ? route('projects.whiteboard.show', $project) : route('projects.show', ['project' => $project, 'tab' => $tab]) }}" class="{{ $activeTab === $tab ? 'border-slate-950 text-slate-950' : 'border-transparent text-gray-500' }} shrink-0 whitespace-nowrap border-b-2 pb-3 transition hover:text-slate-950">
                         {{ $label }}
                         @if ($count !== null)
                             <span class="ml-1 rounded-full bg-gray-100 px-1.5 text-[10px]">{{ $count }}</span>
@@ -62,7 +62,7 @@
                 @endforeach
             </nav>
 
-            <div class="flex items-center gap-3 pb-3">
+            <div class="flex w-full items-center justify-end gap-3 pb-3 sm:w-auto">
                 <div class="flex -space-x-2">
                     @foreach ($project->members->take(3) as $member)
                         <span class="grid size-8 place-items-center rounded-full border-2 border-white bg-slate-950 text-[10px] font-bold text-white">{{ str($member->name)->substr(0, 2)->upper() }}</span>
@@ -74,7 +74,7 @@
     </div>
 
     <section
-        class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+        class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4"
         data-whiteboard
         data-save-url="{{ route('projects.whiteboard.update', $project) }}"
         data-load-url="{{ route('projects.whiteboard.show', $project) }}"
@@ -84,13 +84,13 @@
         data-revision="{{ md5(json_encode($whiteboard?->data ?? ['items' => []])) }}"
     >
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2">
-                <button type="button" data-tool="select" class="whiteboard-tool rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">Select</button>
-                <button type="button" data-tool="note" class="whiteboard-tool rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Note</button>
-                <button type="button" data-tool="text" class="whiteboard-tool rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Text</button>
-                <button type="button" data-tool="rect" class="whiteboard-tool rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Box</button>
-                <button type="button" data-tool="line" class="whiteboard-tool rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Line</button>
-                <button type="button" data-tool="path" class="whiteboard-tool rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Pen</button>
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <button type="button" data-tool="select" class="whiteboard-tool rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4">Select</button>
+                <button type="button" data-tool="note" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Note</button>
+                <button type="button" data-tool="text" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Text</button>
+                <button type="button" data-tool="rect" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Box</button>
+                <button type="button" data-tool="line" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Line</button>
+                <button type="button" data-tool="path" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Pen</button>
                 <select data-color class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition focus:border-indigo-400">
                     <option value="indigo">Indigo</option>
                     <option value="emerald">Emerald</option>
@@ -108,7 +108,7 @@
             </div>
         </div>
 
-        <div class="relative h-[640px] overflow-hidden rounded-2xl border border-gray-200 bg-[#f8fafc]">
+        <div class="relative h-[65vh] min-h-[420px] overflow-hidden rounded-2xl border border-gray-200 bg-[#f8fafc] lg:h-[640px]">
             <svg data-canvas class="h-full w-full cursor-crosshair touch-none" viewBox="0 0 1400 760" role="img" aria-label="Project whiteboard canvas">
                 <defs>
                     <pattern id="whiteboard-grid" width="32" height="32" patternUnits="userSpaceOnUse">

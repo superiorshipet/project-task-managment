@@ -9,11 +9,11 @@
         $projectProgress = $project->tasks_count ? round(($project->completed_tasks_count / $project->tasks_count) * 100) : 0;
     @endphp
 
-    <div class="mb-5 border-b border-gray-200 bg-white px-5 pt-5 shadow-sm" x-data="{ inviteOpen: false, copied: false }">
+    <div class="mb-5 border-b border-gray-200 bg-white px-4 pt-5 shadow-sm sm:px-5" x-data="{ inviteOpen: false, copied: false }">
         <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-bold tracking-tight">{{ $project->title }}</h1>
+            <div class="min-w-0 flex-1">
+                <div class="flex min-w-0 items-center gap-2">
+                    <h1 class="min-w-0 truncate text-xl font-bold tracking-tight sm:text-2xl">{{ $project->title }}</h1>
                     <form method="POST" action="{{ route('projects.favorite', $project) }}">
                         @csrf
                         <button class="text-xl text-amber-400 transition hover:scale-110" aria-label="Toggle favorite">{{ $isFavorite ? '★' : '☆' }}</button>
@@ -36,7 +36,7 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                 <button type="button" onclick="document.querySelector('[data-project-task-search]')?.focus()" class="grid size-9 place-items-center rounded-lg text-gray-500 transition hover:bg-gray-100">⌕</button>
                 <a href="{{ route('notifications.index', ['type' => 'task_status_changed']) }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Updates</a>
                 <button type="button" @click="navigator.clipboard.writeText(window.location.href); copied = true; setTimeout(() => copied = false, 1400)" class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
@@ -50,14 +50,14 @@
         </div>
 
         <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <nav class="flex gap-6 text-sm font-semibold text-gray-500">
+            <nav class="-mx-4 flex w-[calc(100%+2rem)] gap-5 overflow-x-auto px-4 text-sm font-semibold text-gray-500 sm:mx-0 sm:w-auto sm:gap-6 sm:px-0">
                 @foreach ([
                     'board' => ['Task Board', $project->tasks_count],
-                    'files' => ['Files', $projectFiles->count()],
+                    'files' => ['Files', $projectFiles->count() + $taskFiles->count()],
                     'mentions' => ['Mentions', $projectMessages->count()],
                     'whiteboard' => ['Whiteboard', null],
                 ] as $tab => [$label, $count])
-                    <a href="{{ $tab === 'whiteboard' ? route('projects.whiteboard.show', $project) : route('projects.show', ['project' => $project, 'tab' => $tab]) }}" class="{{ $activeTab === $tab ? 'border-slate-950 text-slate-950' : 'border-transparent text-gray-500' }} border-b-2 pb-3 transition hover:text-slate-950">
+                    <a href="{{ $tab === 'whiteboard' ? route('projects.whiteboard.show', $project) : route('projects.show', ['project' => $project, 'tab' => $tab]) }}" class="{{ $activeTab === $tab ? 'border-slate-950 text-slate-950' : 'border-transparent text-gray-500' }} shrink-0 whitespace-nowrap border-b-2 pb-3 transition hover:text-slate-950">
                         {{ $label }}
                         @if ($count !== null)
                             <span class="ml-1 rounded-full bg-gray-100 px-1.5 text-[10px]">{{ $count }}</span>
@@ -66,7 +66,7 @@
                 @endforeach
             </nav>
 
-            <div class="flex items-center gap-3 pb-3">
+            <div class="flex w-full items-center justify-between gap-3 pb-3 sm:w-auto sm:justify-start">
                 @can('update', $project)
                     <button type="button" @click="inviteOpen = true" class="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50">Invite</button>
                 @endcan
@@ -80,8 +80,8 @@
         </div>
 
         @can('update', $project)
-            <div x-show="inviteOpen" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
-                <form method="POST" action="{{ route('projects.invitations.store', $project) }}" @click.outside="inviteOpen = false" class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div x-show="inviteOpen" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-3 sm:p-4">
+                <form method="POST" action="{{ route('projects.invitations.store', $project) }}" @click.outside="inviteOpen = false" class="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
                     @csrf
                     <div class="mb-5 flex items-center justify-between">
                         <div>
@@ -103,22 +103,68 @@
     @if ($activeTab === 'board')
         @include('tasks._board', ['project' => $project, 'projects' => collect([$project])])
     @elseif ($activeTab === 'files')
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                @forelse ($projectFiles as $task)
+        <div class="space-y-5">
+            <form method="POST" action="{{ route('projects.files.store', $project) }}" enctype="multipart/form-data" class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                @csrf
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold">Project files</h3>
+                        <p class="mt-1 text-sm text-gray-500">Upload documents, images, sheets, decks, or zip files for everyone in this project.</p>
+                    </div>
+                    <button class="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Add files</button>
+                </div>
+                <input name="files[]" type="file" multiple required accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" class="mt-4 w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-4 text-sm outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-slate-950 file:px-3 file:py-2 file:text-white focus:border-indigo-400">
+                <p class="mt-2 text-xs font-medium text-gray-400">Up to 10 files per upload, 10 MB each.</p>
+            </form>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="text-lg font-bold">Uploaded files</h3>
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $projectFiles->count() }} files</span>
+                </div>
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    @forelse ($projectFiles as $file)
+                        <article class="rounded-xl border border-gray-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
+                            <a href="{{ $file->url() }}" target="_blank" class="block min-w-0">
+                                <p class="truncate font-semibold">{{ $file->original_name }}</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ $file->humanSize() }} · {{ $file->user?->name ?? 'Deleted user' }}</p>
+                                <p class="mt-2 text-[11px] font-semibold text-gray-400">{{ $file->created_at->diffForHumans() }}</p>
+                            </a>
+                            @if (auth()->user()->canManageProject($project) || auth()->user()->is($file->user))
+                                <form method="POST" action="{{ route('projects.files.destroy', [$project, $file]) }}" class="mt-3" onsubmit="return confirm('Delete this file?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">Delete</button>
+                                </form>
+                            @endif
+                        </article>
+                    @empty
+                        <p class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 md:col-span-2 xl:col-span-3">No project files uploaded yet.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="text-lg font-bold">Task attachments</h3>
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $taskFiles->count() }} files</span>
+                </div>
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                @forelse ($taskFiles as $task)
                     <a href="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" target="_blank" class="rounded-xl border border-gray-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
                         <p class="font-semibold">{{ basename($task->attachment) }}</p>
                         <p class="mt-1 text-sm text-gray-500">{{ $task->title }} · {{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
                     </a>
                 @empty
-                    <p class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 md:col-span-2 xl:col-span-3">No files uploaded yet.</p>
+                    <p class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 md:col-span-2 xl:col-span-3">No task attachments yet.</p>
                 @endforelse
+                </div>
             </div>
         </div>
     @else
         <div>
-            <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-5 flex items-center justify-between gap-3">
+            <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h3 class="text-lg font-bold">Project chat</h3>
                         <p class="text-sm text-gray-500">Use @handle to notify a teammate.</p>
@@ -126,9 +172,9 @@
                     <span data-chat-count class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ $projectMessages->count() }} messages</span>
                 </div>
 
-                <div class="mb-5 max-h-[520px] space-y-3 overflow-y-auto rounded-2xl bg-gray-50 p-3" data-chat-messages data-last-message-id="{{ $projectMessages->last()?->id ?? 0 }}">
+                <div class="mb-5 max-h-[60vh] space-y-3 overflow-y-auto rounded-2xl bg-gray-50 p-2 sm:max-h-[520px] sm:p-3" data-chat-messages data-last-message-id="{{ $projectMessages->last()?->id ?? 0 }}">
                     @forelse ($projectMessages as $message)
-                        <article class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm" data-chat-message-id="{{ $message->id }}">
+                        <article class="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:p-4" data-chat-message-id="{{ $message->id }}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex min-w-0 items-center gap-3">
                                     <span class="grid size-9 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-bold text-white">{{ str($message->user->name)->substr(0, 2)->upper() }}</span>

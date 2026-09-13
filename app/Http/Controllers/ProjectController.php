@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
+use App\Models\ProjectFile;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\WorkspaceLookups;
@@ -118,7 +119,8 @@ class ProjectController extends Controller
             'users' => $users,
             'statuses' => Task::STATUSES,
             'activeTab' => $request->string('tab')->toString() === 'timeline' ? 'board' : ($request->string('tab')->toString() ?: 'board'),
-            'projectFiles' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->whereNotNull('attachment')->with(['assignee:id,name,email,role', 'assignees:id,name,email,role'])->latest()->get(),
+            'projectFiles' => ProjectFile::query()->where('project_id', $project->id)->with('user:id,name,email,role')->latest()->get(),
+            'taskFiles' => Task::query()->where('project_id', $project->id)->visibleTo($request->user())->whereNotNull('attachment')->with(['assignee:id,name,email,role', 'assignees:id,name,email,role'])->latest()->get(),
             'projectMessages' => $project->messages()->with('user:id,name,email,role')->latest()->limit(50)->get()->reverse()->values(),
             'mentionableUsers' => $mentionableUsers,
         ]);

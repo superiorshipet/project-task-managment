@@ -5,11 +5,11 @@
 @section('page-title', 'Team Workspace')
 
 @section('content')
-    <form method="GET" action="{{ route('team.index') }}" class="mb-5 grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:grid-cols-[1fr_160px_220px_180px_auto]">
-        <input name="q" value="{{ request('q') }}" placeholder="Search users" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+    <form method="GET" action="{{ route('team.index') }}" class="mb-5 grid gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4 lg:grid-cols-[1fr_160px_220px_180px_auto]">
+        <input name="q" value="{{ request('q') }}" placeholder="Search users" class="min-w-0 rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
 
         @if (auth()->user()->isAdmin())
-            <select name="role" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+            <select name="role" class="min-w-0 rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
                 <option value="">All roles</option>
                 @foreach (\App\Models\User::ROLES as $role)
                     <option value="{{ $role }}" @selected(request('role') === $role)>{{ str($role)->replace('_', ' ')->title() }}</option>
@@ -19,14 +19,14 @@
             <input type="hidden" name="role" value="">
         @endif
 
-        <select name="project_id" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+        <select name="project_id" class="min-w-0 rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
             <option value="">All projects</option>
             @foreach ($projects as $project)
                 <option value="{{ $project->id }}" @selected((int) request('project_id') === $project->id)>{{ $project->title }}</option>
             @endforeach
         </select>
 
-        <select name="status" class="rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
+        <select name="status" class="min-w-0 rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-indigo-400">
             <option value="">All task status</option>
             @foreach ($statuses as $status)
                 <option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>
@@ -38,15 +38,15 @@
 
     <div class="grid gap-4">
         @forelse ($users as $member)
-            <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
                 <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="flex items-center gap-3">
+                    <div class="flex min-w-0 items-center gap-3">
                         <div class="grid size-11 place-items-center rounded-2xl bg-slate-950 text-sm font-bold text-white">
                             {{ str($member->name)->substr(0, 2)->upper() }}
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <h3 class="font-semibold text-gray-950">{{ $member->name }}</h3>
-                            <p class="text-sm text-gray-500">{{ $member->email }}</p>
+                            <p class="truncate text-sm text-gray-500">{{ $member->email }}</p>
                         </div>
                     </div>
 
@@ -67,8 +67,8 @@
                     </div>
                 </div>
 
-                <div class="mt-5 overflow-hidden rounded-2xl border border-gray-100">
-                    <div class="grid grid-cols-[1.2fr_1fr_120px_120px_160px] bg-gray-50 px-4 py-3 text-xs font-semibold uppercase text-gray-400">
+                <div class="mt-5 overflow-x-auto rounded-2xl border border-gray-100">
+                    <div class="grid min-w-[760px] grid-cols-[1.2fr_1fr_120px_120px_160px] bg-gray-50 px-4 py-3 text-xs font-semibold uppercase text-gray-400">
                         <span>Task</span>
                         <span>Project</span>
                         <span>Status</span>
@@ -78,12 +78,12 @@
 
                     <div class="divide-y divide-gray-100">
                         @forelse ($member->workspaceTasks as $task)
-                            <div class="grid grid-cols-[1.2fr_1fr_120px_120px_160px] items-center gap-3 px-4 py-3 text-sm">
-                                <div>
+                            <div class="grid min-w-[760px] grid-cols-[1.2fr_1fr_120px_120px_160px] items-center gap-3 px-4 py-3 text-sm">
+                                <div class="min-w-0">
                                     <p class="font-semibold text-gray-950">{{ $task->title }}</p>
                                     <p class="line-clamp-1 text-xs text-gray-500">{{ $task->description ?: 'No description.' }}</p>
                                 </div>
-                                <a href="{{ route('projects.show', $task->project) }}" class="font-medium text-indigo-600">{{ $task->project->title }}</a>
+                                <a href="{{ route('projects.show', $task->project) }}" class="truncate font-medium text-indigo-600">{{ $task->project->title }}</a>
                                 <span class="rounded-full bg-gray-100 px-2.5 py-1 text-center text-xs font-semibold text-gray-600">{{ str($task->status)->replace('_', ' ')->title() }}</span>
                                 <span class="text-xs font-semibold text-gray-500">{{ $task->due_date?->format('d M Y') ?? '-' }}</span>
                                 <div class="flex justify-end">

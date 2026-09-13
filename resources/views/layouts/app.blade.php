@@ -9,11 +9,16 @@
     <link rel="preload" href="{{ Vite::asset('resources/css/app.css') }}" as="style">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>[x-cloak] { display: none !important; }</style>
 </head>
 <body class="min-h-screen bg-[#f6f7fb] font-sans text-gray-950 antialiased">
-    <div class="flex min-h-screen">
+    <div class="flex min-h-screen" x-data="{ mobileSidebarOpen: false }">
         @auth
-        <aside class="sticky top-0 hidden h-screen w-72 shrink-0 overflow-hidden border-r border-white/10 bg-[#1f2029] text-white lg:flex">
+        <div x-show="mobileSidebarOpen" x-cloak x-transition.opacity class="fixed inset-0 z-40 bg-slate-950/50 lg:hidden" @click="mobileSidebarOpen = false"></div>
+        <aside
+            class="fixed inset-y-0 left-0 z-50 flex h-screen w-[min(18rem,calc(100vw-2rem))] shrink-0 -translate-x-full overflow-hidden border-r border-white/10 bg-[#1f2029] text-white transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:w-72 lg:translate-x-0"
+            :class="{ 'translate-x-0': mobileSidebarOpen, '-translate-x-full': ! mobileSidebarOpen }"
+        >
             <div class="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 py-6">
                 @php
                     $unreadNotificationsCount = \App\Models\WorkspaceNotification::query()
@@ -23,7 +28,10 @@
                 @endphp
 
                 <div class="mb-6">
-                    <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="h-20 w-full object-contain object-left">
+                    <div class="flex items-start justify-between gap-3">
+                        <img src="{{ asset('tasharuky-logo.svg') }}" alt="Tasharuky" class="h-20 min-w-0 flex-1 object-contain object-left">
+                        <button type="button" @click="mobileSidebarOpen = false" class="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10 text-lg text-slate-300 lg:hidden">x</button>
+                    </div>
                     <p class="mt-3 px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Project Hub</p>
                 </div>
 
@@ -186,9 +194,16 @@
         <main class="min-w-0 flex-1">
             <header class="sticky top-0 z-20 border-b border-gray-200/80 bg-white/85 px-4 py-4 backdrop-blur md:px-8">
                 <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div>
+                    <div class="flex min-w-0 items-center gap-3">
+                        @auth
+                            <button type="button" @click="mobileSidebarOpen = true" class="grid size-10 shrink-0 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm lg:hidden" aria-label="Open navigation">
+                                <span class="h-0.5 w-5 rounded-full bg-current before:mt-[-6px] before:block before:h-0.5 before:w-5 before:rounded-full before:bg-current after:mt-[10px] after:block after:h-0.5 after:w-5 after:rounded-full after:bg-current"></span>
+                            </button>
+                        @endauth
+                        <div class="min-w-0">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">@yield('eyebrow', 'Workspace')</p>
-                        <h2 class="text-2xl font-bold tracking-tight text-gray-950">@yield('page-title', 'Dashboard')</h2>
+                            <h2 class="truncate text-xl font-bold tracking-tight text-gray-950 sm:text-2xl">@yield('page-title', 'Dashboard')</h2>
+                        </div>
                     </div>
                     @auth
                         @php
@@ -203,7 +218,7 @@
                                 ->unread()
                                 ->count();
                         @endphp
-                        <div class="flex items-center gap-3">
+                        <div class="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
                             <div class="relative" x-data="{ openNotifications: false }" @click.outside="openNotifications = false" data-notifications-root data-feed-url="{{ route('notifications.feed') }}" data-user-id="{{ auth()->id() }}">
                                 <button type="button" @click="openNotifications = ! openNotifications" class="relative grid size-10 place-items-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:bg-gray-50" aria-label="Notifications">
                                     <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -213,7 +228,7 @@
                                     <span data-notification-badge class="{{ $headerUnreadNotificationsCount > 0 ? 'grid' : 'hidden' }} absolute -right-1 -top-1 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{{ $headerUnreadNotificationsCount }}</span>
                                 </button>
 
-                                <div x-show="openNotifications" x-cloak x-transition.opacity.duration.150ms class="absolute right-0 z-40 mt-3 w-96 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+                                <div x-show="openNotifications" x-cloak x-transition.opacity.duration.150ms class="absolute right-0 z-40 mt-3 w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl sm:w-96">
                                     <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
                                         <div>
                                             <p class="text-sm font-bold text-gray-950">Notifications</p>
@@ -256,18 +271,18 @@
                                 </div>
                             </div>
                             @can('create', \App\Models\Project::class)
-                                <a href="{{ route('projects.create') }}" class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">New Project</a>
+                                <a href="{{ route('projects.create') }}" class="rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 sm:px-4">New Project</a>
                             @endcan
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300">Logout</button>
+                                <button class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 sm:px-4">Logout</button>
                             </form>
                         </div>
                     @endauth
                 </div>
             </header>
 
-            <section class="px-4 py-6 md:px-8">
+            <section class="px-3 py-5 sm:px-4 md:px-8">
                 @if (session('status'))
                     <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('status') }}</div>
                 @endif
