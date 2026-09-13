@@ -20,7 +20,7 @@ class TaskPolicy
 
     public function create(User $user): bool
     {
-        return $user->canManageProjects();
+        return true;
     }
 
     public function update(User $user, Task $task): bool
@@ -30,7 +30,8 @@ class TaskPolicy
 
     public function updateStatus(User $user, Task $task): bool
     {
-        return $user->canViewProject($task->project);
+        return $task->assigned_to === $user->id
+            || $user->canViewProject($task->project);
     }
 
     public function delete(User $user, Task $task): bool

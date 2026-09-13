@@ -19,7 +19,7 @@ class ProjectPolicy
 
     public function create(User $user): bool
     {
-        return $user->canManageProjects();
+        return true;
     }
 
     public function update(User $user, Project $project): bool

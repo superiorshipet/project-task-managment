@@ -1,6 +1,11 @@
 <div x-data="{ openTaskModal: false }">
-    <div class="mb-5 flex flex-wrap items-stretch justify-between gap-3">
-        <form class="grid w-full flex-1 gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4 md:grid-cols-[1fr_160px_180px_180px_auto]" data-live-search data-live-mode="client" data-live-target="#task-board-columns" data-live-partial="1">
+    @php
+        $boardFilterGrid = isset($project) && $project
+            ? 'md:grid-cols-[minmax(180px,1fr)_160px_180px_auto_auto]'
+            : 'md:grid-cols-[180px_minmax(180px,1fr)_160px_180px_auto_auto]';
+    @endphp
+    <div class="mb-5">
+        <form class="{{ $boardFilterGrid }} grid w-full gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4" data-live-search data-live-mode="client" data-live-target="#task-board-columns" data-live-partial="1">
             @if (request('due_date'))
                 <input type="hidden" name="due_date" value="{{ request('due_date') }}">
             @endif
@@ -29,11 +34,10 @@
                 @endforeach
             </select>
             <button class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Filter</button>
+            @can('create', \App\Models\Task::class)
+                <button type="button" @click="openTaskModal = true" class="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">New Task</button>
+            @endcan
         </form>
-
-        @can('create', \App\Models\Task::class)
-            <button type="button" @click="openTaskModal = true" class="w-full rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">New Task</button>
-        @endcan
     </div>
 
     @if (request('due_date') || request('due_range'))

@@ -80,13 +80,13 @@ class Project extends Model
         }
 
         return $query->where(function (Builder $query) use ($user): void {
-            if ($user->isProjectManager()) {
-                $query->where('projects.user_id', $user->id);
+            $query->where('projects.user_id', $user->id);
 
+            if ($user->isProjectManager()) {
                 return;
             }
 
-            $query->whereHas('tasks', fn (Builder $tasks) => $tasks
+            $query->orWhereHas('tasks', fn (Builder $tasks) => $tasks
                 ->where('assigned_to', $user->id)
                 ->orWhereHas('assignees', fn (Builder $assignees) => $assignees->whereKey($user->id)))
                 ->orWhereHas('members', fn (Builder $members) => $members->whereKey($user->id));

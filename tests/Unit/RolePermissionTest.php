@@ -16,7 +16,7 @@ class RolePermissionTest extends TestCase
         $admin = new User(['role' => User::ROLE_ADMIN]);
         $project = new Project(['user_id' => 999]);
 
-        $this->assertTrue((new ProjectPolicy())->update($admin, $project));
+        $this->assertTrue((new ProjectPolicy)->update($admin, $project));
     }
 
     public function test_project_manager_can_manage_only_owned_projects(): void
@@ -27,10 +27,33 @@ class RolePermissionTest extends TestCase
         $ownedProject = new Project(['user_id' => 10]);
         $otherProject = new Project(['user_id' => 20]);
 
-        $policy = new ProjectPolicy();
+        $policy = new ProjectPolicy;
 
         $this->assertTrue($policy->update($manager, $ownedProject));
         $this->assertFalse($policy->update($manager, $otherProject));
+    }
+
+    public function test_user_can_create_and_manage_their_own_project(): void
+    {
+        $user = new User(['role' => User::ROLE_USER]);
+        $user->id = 7;
+
+        $ownedProject = new Project(['user_id' => 7]);
+        $otherProject = new Project(['user_id' => 20]);
+
+        $policy = new ProjectPolicy;
+
+        $this->assertTrue($policy->create($user));
+        $this->assertTrue($policy->view($user, $ownedProject));
+        $this->assertTrue($policy->update($user, $ownedProject));
+        $this->assertFalse($policy->update($user, $otherProject));
+    }
+
+    public function test_user_can_open_task_creation_flow_without_full_task_management(): void
+    {
+        $user = new User(['role' => User::ROLE_USER]);
+
+        $this->assertTrue((new TaskPolicy)->create($user));
     }
 
     public function test_user_can_update_assigned_task_status_without_full_task_management(): void
@@ -42,7 +65,7 @@ class RolePermissionTest extends TestCase
         $task = new Task(['assigned_to' => 7]);
         $task->setRelation('project', $project);
 
-        $policy = new TaskPolicy();
+        $policy = new TaskPolicy;
 
         $this->assertTrue($policy->updateStatus($user, $task));
         $this->assertFalse($policy->update($user, $task));
@@ -57,6 +80,6 @@ class RolePermissionTest extends TestCase
         $project = new Project(['user_id' => 10]);
         $project->setRelation('members', collect([$user]));
 
-        $this->assertTrue((new ProjectPolicy())->view($user, $project));
+        $this->assertTrue((new ProjectPolicy)->view($user, $project));
     }
 }

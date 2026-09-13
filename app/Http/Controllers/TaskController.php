@@ -57,7 +57,7 @@ class TaskController extends Controller
     public function store(StoreTaskRequest $request): RedirectResponse
     {
         $project = Project::query()->visibleTo($request->user())->findOrFail($request->integer('project_id'));
-        $this->authorize('update', $project);
+        $this->authorize('view', $project);
 
         $data = $request->validated();
         $assignedUserIds = $this->assignedUserIds($request);

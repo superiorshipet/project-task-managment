@@ -102,7 +102,7 @@ class User extends Authenticatable
     public function canManageProject(Project $project): bool
     {
         return $this->isAdmin()
-            || ($this->isProjectManager() && $project->user_id === $this->id);
+            || $project->user_id === $this->id;
     }
 
     public function canViewProject(Project $project): bool
