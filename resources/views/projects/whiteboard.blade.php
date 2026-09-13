@@ -91,17 +91,16 @@
                 <button type="button" data-tool="rect" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Box</button>
                 <button type="button" data-tool="line" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Line</button>
                 <button type="button" data-tool="path" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Pen</button>
-                <select data-color class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition focus:border-indigo-400">
-                    <option value="indigo">Indigo</option>
-                    <option value="emerald">Emerald</option>
-                    <option value="amber">Amber</option>
-                    <option value="rose">Rose</option>
-                    <option value="slate">Slate</option>
-                </select>
+                <div class="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5" aria-label="Whiteboard colors">
+                    <button type="button" data-color-choice="indigo" class="whiteboard-color size-7 rounded-lg border-2 border-slate-950 bg-indigo-500" aria-label="Indigo"></button>
+                    <button type="button" data-color-choice="emerald" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-emerald-500" aria-label="Emerald"></button>
+                    <button type="button" data-color-choice="amber" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-amber-400" aria-label="Amber"></button>
+                    <button type="button" data-color-choice="rose" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-rose-500" aria-label="Rose"></button>
+                    <button type="button" data-color-choice="slate" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-slate-900" aria-label="Slate"></button>
+                </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-                <span data-save-state class="rounded-full bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-500">Ready</span>
                 <button type="button" data-delete class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Delete</button>
                 <button type="button" data-clear class="rounded-xl bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100">Clear</button>
                 <button type="button" data-save class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">Save</button>
@@ -128,9 +127,8 @@
 
             const canvas = root.querySelector('[data-canvas]');
             const itemsLayer = root.querySelector('[data-items]');
-            const saveState = root.querySelector('[data-save-state]');
             const tools = root.querySelectorAll('[data-tool]');
-            const colorInput = root.querySelector('[data-color]');
+            const colorButtons = root.querySelectorAll('[data-color-choice]');
             const token = document.querySelector('meta[name="csrf-token"]').content;
             const colors = {
                 indigo: { fill: '#eef2ff', stroke: '#6366f1', text: '#312e81' },
@@ -141,9 +139,11 @@
             };
 
             let mode = 'select';
+            let currentColor = 'indigo';
             let selectedId = null;
             let activeDrag = null;
             let activePath = null;
+            let activeLine = null;
             let dirty = false;
             let saveTimer = null;
             let saveInFlight = false;
@@ -166,11 +166,18 @@
                 mode = nextMode;
                 tools.forEach((tool) => {
                     const active = tool.dataset.tool === mode;
-                    tool.classList.toggle('bg-slate-950', active);
-                    tool.classList.toggle('text-white', active);
-                    tool.classList.toggle('border', !active);
-                    tool.classList.toggle('border-gray-200', !active);
-                    tool.classList.toggle('text-gray-700', !active);
+                    tool.className = active
+                        ? 'whiteboard-tool rounded-xl border border-slate-950 bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4'
+                        : 'whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4';
+                });
+            }
+
+            function setColor(nextColor) {
+                currentColor = nextColor;
+                colorButtons.forEach((button) => {
+                    const active = button.dataset.colorChoice === currentColor;
+                    button.classList.toggle('border-slate-950', active);
+                    button.classList.toggle('border-transparent', !active);
                 });
             }
 
@@ -186,8 +193,6 @@
 
             function markDirty(live = false) {
                 dirty = true;
-                saveState.textContent = 'Editing';
-                saveState.className = 'rounded-full bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700';
                 clearTimeout(saveTimer);
 
                 if (live) {
@@ -234,7 +239,7 @@
             function createItem(event) {
                 const cursor = point(event);
                 const id = `item-${Date.now()}-${Math.round(Math.random() * 1000)}`;
-                const color = colorInput.value;
+                const color = currentColor;
 
                 if (mode === 'note') {
                     items.push({ id, type: 'note', x: cursor.x, y: cursor.y, width: 220, height: 120, color, text: prompt('Note text') || 'Project idea' });
@@ -242,14 +247,11 @@
                     items.push({ id, type: 'text', x: cursor.x, y: cursor.y, color, text: prompt('Text') || 'Milestone' });
                 } else if (mode === 'rect') {
                     items.push({ id, type: 'rect', x: cursor.x, y: cursor.y, width: 240, height: 140, color });
-                } else if (mode === 'line') {
-                    items.push({ id, type: 'line', x1: cursor.x, y1: cursor.y, x2: cursor.x + 180, y2: cursor.y + 80, color });
                 } else {
                     return;
                 }
 
                 selectedId = id;
-                setMode('select');
                 render();
                 markDirty(true);
             }
@@ -283,8 +285,6 @@
                 saveInFlight = true;
                 saveQueued = false;
                 lastLiveSaveAt = Date.now();
-                saveState.textContent = 'Saving';
-                saveState.className = 'rounded-full bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700';
 
                 const payloadToSave = { data: { items } };
                 let failed = false;
@@ -302,8 +302,6 @@
 
                     if (!response.ok) {
                         failed = true;
-                        saveState.textContent = 'Save failed';
-                        saveState.className = 'rounded-full bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600';
                         return;
                     }
 
@@ -311,14 +309,8 @@
                     lastUpdatedAt = payload.updated_at;
                     lastRevision = payload.revision;
                     dirty = saveQueued;
-                    saveState.textContent = dirty ? 'Syncing' : 'Live';
-                    saveState.className = dirty
-                        ? 'rounded-full bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700'
-                        : 'rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';
                 } catch (error) {
                     failed = true;
-                    saveState.textContent = 'Save failed';
-                    saveState.className = 'rounded-full bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600';
                 } finally {
                     saveInFlight = false;
 
@@ -350,8 +342,6 @@
                     lastUpdatedAt = payload.updated_at;
                     lastRevision = payload.revision;
                     selectedId = null;
-                    saveState.textContent = 'Live';
-                    saveState.className = 'rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600';
                     render();
                 }
             }
@@ -378,8 +368,20 @@
                 const cursor = point(event);
 
                 if (mode === 'path' && !target) {
-                    activePath = { id: `item-${Date.now()}`, type: 'path', color: colorInput.value, points: [cursor] };
+                    activePath = { id: `item-${Date.now()}`, type: 'path', color: currentColor, points: [cursor] };
                     items.push(activePath);
+                    selectedId = activePath.id;
+                    canvas.setPointerCapture?.(event.pointerId);
+                    render();
+                    markDirty(true);
+                    return;
+                }
+
+                if (mode === 'line' && !target) {
+                    activeLine = { id: `item-${Date.now()}`, type: 'line', x1: cursor.x, y1: cursor.y, x2: cursor.x, y2: cursor.y, color: currentColor };
+                    items.push(activeLine);
+                    selectedId = activeLine.id;
+                    canvas.setPointerCapture?.(event.pointerId);
                     render();
                     markDirty(true);
                     return;
@@ -404,10 +406,18 @@
                 const cursor = point(event);
 
                 if (activePath) {
-                activePath.points.push(cursor);
-                render();
-                markDirty(true);
-                return;
+                    activePath.points.push(cursor);
+                    render();
+                    markDirty(true);
+                    return;
+                }
+
+                if (activeLine) {
+                    activeLine.x2 = cursor.x;
+                    activeLine.y2 = cursor.y;
+                    render();
+                    markDirty(true);
+                    return;
                 }
 
                 if (!activeDrag) return;
@@ -424,11 +434,14 @@
             window.addEventListener('pointerup', () => {
                 activeDrag = null;
                 activePath = null;
+                activeLine = null;
                 save();
             });
 
             render();
             setMode('select');
+            setColor(currentColor);
+            colorButtons.forEach((button) => button.addEventListener('click', () => setColor(button.dataset.colorChoice)));
             setInterval(refresh, 650);
         })();
     </script>
