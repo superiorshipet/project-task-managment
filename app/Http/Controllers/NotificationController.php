@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProjectInvitation;
 use App\Models\WorkspaceNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -63,7 +64,7 @@ class NotificationController extends Controller
             $notification->update(['read_at' => now()]);
         }
 
-        return redirect($this->destinationUrl($notification));
+        return redirect($this->destinationUrl($notification, $request));
     }
 
     public function markRead(Request $request, WorkspaceNotification $notification): RedirectResponse
@@ -85,8 +86,19 @@ class NotificationController extends Controller
         return back()->with('status', 'All notifications marked as read.');
     }
 
-    private function destinationUrl(WorkspaceNotification $notification): string
+    private function destinationUrl(WorkspaceNotification $notification, Request $request): string
     {
+        if ($notification->type === 'project_invitation') {
+            $invitation = ProjectInvitation::query()
+                ->whereKey(data_get($notification->data, 'invitation_id'))
+                ->where('email', $request->user()->email)
+                ->first();
+
+            if ($invitation && $invitation->status === ProjectInvitation::STATUS_PENDING) {
+                return route('project-invitations.accept', $invitation);
+            }
+        }
+
         if ($notification->project) {
             return route('projects.show', [
                 'project' => $notification->project,

@@ -8,9 +8,6 @@
                     <h3 class="font-semibold">{{ $label }}</h3>
                     <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-500" data-column-count>{{ $columnTasks->count() }}</span>
                 </div>
-                @can('create', \App\Models\Task::class)
-                    <button type="button" @click="openTaskModal = true" class="grid size-8 place-items-center rounded-lg bg-slate-950 text-white transition hover:bg-slate-800">+</button>
-                @endcan
             </div>
 
             <div class="space-y-4" data-column-cards>

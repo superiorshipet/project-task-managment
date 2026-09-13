@@ -48,7 +48,7 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/projects/{project}/files/{file}', [ProjectFileController::class, 'destroy'])->name('projects.files.destroy');
     Route::get('/projects/{project}/messages', [ProjectMessageController::class, 'index'])->name('projects.messages.index');
     Route::post('/projects/{project}/messages', [ProjectMessageController::class, 'store'])->name('projects.messages.store');
-    Route::patch('/project-invitations/{invitation}/accept', [ProjectInvitationController::class, 'accept'])->name('project-invitations.accept');
+    Route::match(['get', 'patch'], '/project-invitations/{invitation}/accept', [ProjectInvitationController::class, 'accept'])->name('project-invitations.accept');
 
     Route::resource('projects', ProjectController::class);
     Route::get('/projects/{project}/whiteboard', [ProjectWhiteboardController::class, 'show'])->name('projects.whiteboard.show');

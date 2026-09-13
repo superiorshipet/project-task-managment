@@ -38,14 +38,16 @@ class ProjectInvitationController extends Controller
         $existingUser = User::query()->where('email', $invitation->email)->first();
 
         if ($existingUser) {
-            $project->members()->syncWithoutDetaching([$existingUser->id]);
             WorkspaceNotification::query()->create([
                 'user_id' => $existingUser->id,
                 'project_id' => $project->id,
                 'type' => 'project_invitation',
                 'title' => 'Project invitation',
                 'body' => "{$request->user()->name} invited you to {$project->title}.",
-                'data' => ['project_title' => $project->title],
+                'data' => [
+                    'invitation_id' => $invitation->id,
+                    'project_title' => $project->title,
+                ],
             ]);
         }
 
