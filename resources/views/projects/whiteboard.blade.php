@@ -42,6 +42,13 @@
                 @can('update', $project)
                     <a href="{{ route('projects.edit', $project) }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Edit</a>
                 @endcan
+                @can('delete', $project)
+                    <form method="POST" action="{{ route('projects.destroy', $project) }}" onsubmit="return confirm('Delete this project?');">
+                        @csrf
+                        @method('DELETE')
+                        <button class="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">Delete</button>
+                    </form>
+                @endcan
             </div>
         </div>
 

@@ -30,7 +30,9 @@ class RolePermissionTest extends TestCase
         $policy = new ProjectPolicy;
 
         $this->assertTrue($policy->update($manager, $ownedProject));
+        $this->assertTrue($policy->delete($manager, $ownedProject));
         $this->assertFalse($policy->update($manager, $otherProject));
+        $this->assertFalse($policy->delete($manager, $otherProject));
     }
 
     public function test_user_can_create_and_manage_their_own_project(): void
@@ -46,6 +48,7 @@ class RolePermissionTest extends TestCase
         $this->assertTrue($policy->create($user));
         $this->assertTrue($policy->view($user, $ownedProject));
         $this->assertTrue($policy->update($user, $ownedProject));
+        $this->assertTrue($policy->delete($user, $ownedProject));
         $this->assertFalse($policy->update($user, $otherProject));
     }
 

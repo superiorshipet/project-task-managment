@@ -29,11 +29,11 @@ class ProjectPolicy
 
     public function delete(User $user, Project $project): bool
     {
-        return $this->update($user, $project);
+        return $user->canManageProject($project);
     }
 
     public function restore(User $user, Project $project): bool
     {
-        return $user->canManageProject($project);
+        return $this->delete($user, $project);
     }
 }
