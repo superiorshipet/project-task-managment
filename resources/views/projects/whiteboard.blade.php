@@ -91,12 +91,36 @@
                 <button type="button" data-tool="rect" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Box</button>
                 <button type="button" data-tool="line" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Line</button>
                 <button type="button" data-tool="path" class="whiteboard-tool rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 sm:px-4">Pen</button>
-                <div class="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5" aria-label="Whiteboard colors">
-                    <button type="button" data-color-choice="indigo" class="whiteboard-color size-7 rounded-lg border-2 border-slate-950 bg-indigo-500" aria-label="Indigo"></button>
-                    <button type="button" data-color-choice="emerald" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-emerald-500" aria-label="Emerald"></button>
-                    <button type="button" data-color-choice="amber" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-amber-400" aria-label="Amber"></button>
-                    <button type="button" data-color-choice="rose" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-rose-500" aria-label="Rose"></button>
-                    <button type="button" data-color-choice="slate" class="whiteboard-color size-7 rounded-lg border-2 border-transparent bg-slate-900" aria-label="Slate"></button>
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                    <button type="button" @click="open = ! open" class="flex min-w-32 items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50" data-color-trigger>
+                        <span class="flex items-center gap-2">
+                            <span data-current-color-dot class="size-4 rounded-full bg-indigo-500"></span>
+                            <span data-current-color-label>Indigo</span>
+                        </span>
+                        <span class="text-gray-400">⌄</span>
+                    </button>
+                    <div x-show="open" x-cloak x-transition.opacity.duration.150ms class="absolute left-0 z-30 mt-2 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
+                        <button type="button" data-color-choice="indigo" @click="open = false" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                            <span class="size-4 rounded-full bg-indigo-500"></span>
+                            <span>Indigo</span>
+                        </button>
+                        <button type="button" data-color-choice="emerald" @click="open = false" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                            <span class="size-4 rounded-full bg-emerald-500"></span>
+                            <span>Emerald</span>
+                        </button>
+                        <button type="button" data-color-choice="amber" @click="open = false" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                            <span class="size-4 rounded-full bg-amber-400"></span>
+                            <span>Amber</span>
+                        </button>
+                        <button type="button" data-color-choice="rose" @click="open = false" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                            <span class="size-4 rounded-full bg-rose-500"></span>
+                            <span>Rose</span>
+                        </button>
+                        <button type="button" data-color-choice="slate" @click="open = false" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                            <span class="size-4 rounded-full bg-slate-900"></span>
+                            <span>Slate</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -107,7 +131,7 @@
             </div>
         </div>
 
-        <div class="relative h-[65vh] min-h-[420px] overflow-hidden rounded-2xl border border-gray-200 bg-[#f8fafc] lg:h-[640px]">
+        <div class="relative h-[65vh] min-h-[420px] overflow-hidden rounded-2xl border border-gray-200 bg-[#f8fafc] lg:h-[640px]" data-canvas-wrap>
             <svg data-canvas class="h-full w-full cursor-crosshair touch-none" viewBox="0 0 1400 760" role="img" aria-label="Project whiteboard canvas">
                 <defs>
                     <pattern id="whiteboard-grid" width="32" height="32" patternUnits="userSpaceOnUse">
@@ -117,6 +141,31 @@
                 <rect width="1400" height="760" fill="url(#whiteboard-grid)"></rect>
                 <g data-items></g>
             </svg>
+        </div>
+
+        <div data-text-dialog hidden class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
+            <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Whiteboard</p>
+                <h3 data-text-dialog-title class="mt-1 text-xl font-bold text-gray-950">Edit text</h3>
+                <label for="whiteboard-text-dialog-input" class="mt-4 block text-sm font-semibold text-gray-700">Content</label>
+                <textarea id="whiteboard-text-dialog-input" data-text-dialog-input rows="5" class="mt-2 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"></textarea>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" data-text-cancel class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Cancel</button>
+                    <button type="button" data-text-save class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div data-clear-dialog hidden class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
+            <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Whiteboard</p>
+                <h3 class="mt-1 text-xl font-bold text-gray-950">Clear the board?</h3>
+                <p class="mt-2 text-sm leading-6 text-gray-500">This removes every item from the current project board.</p>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" data-clear-cancel class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Cancel</button>
+                    <button type="button" data-clear-confirm class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500">Clear</button>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -129,13 +178,19 @@
             const itemsLayer = root.querySelector('[data-items]');
             const tools = root.querySelectorAll('[data-tool]');
             const colorButtons = root.querySelectorAll('[data-color-choice]');
+            const currentColorDot = root.querySelector('[data-current-color-dot]');
+            const currentColorLabel = root.querySelector('[data-current-color-label]');
+            const textDialog = root.querySelector('[data-text-dialog]');
+            const textDialogTitle = root.querySelector('[data-text-dialog-title]');
+            const textDialogInput = root.querySelector('[data-text-dialog-input]');
+            const clearDialog = root.querySelector('[data-clear-dialog]');
             const token = document.querySelector('meta[name="csrf-token"]').content;
             const colors = {
-                indigo: { fill: '#eef2ff', stroke: '#6366f1', text: '#312e81' },
-                emerald: { fill: '#ecfdf5', stroke: '#10b981', text: '#064e3b' },
-                amber: { fill: '#fffbeb', stroke: '#f59e0b', text: '#78350f' },
-                rose: { fill: '#fff1f2', stroke: '#f43f5e', text: '#881337' },
-                slate: { fill: '#f1f5f9', stroke: '#0f172a', text: '#0f172a' },
+                indigo: { fill: '#eef2ff', stroke: '#6366f1', text: '#312e81', label: 'Indigo', dot: 'bg-indigo-500' },
+                emerald: { fill: '#ecfdf5', stroke: '#10b981', text: '#064e3b', label: 'Emerald', dot: 'bg-emerald-500' },
+                amber: { fill: '#fffbeb', stroke: '#f59e0b', text: '#78350f', label: 'Amber', dot: 'bg-amber-400' },
+                rose: { fill: '#fff1f2', stroke: '#f43f5e', text: '#881337', label: 'Rose', dot: 'bg-rose-500' },
+                slate: { fill: '#f1f5f9', stroke: '#0f172a', text: '#0f172a', label: 'Slate', dot: 'bg-slate-900' },
             };
 
             let mode = 'select';
@@ -151,6 +206,9 @@
             let lastLiveSaveAt = 0;
             let lastUpdatedAt = root.dataset.updatedAt || null;
             let lastRevision = root.dataset.revision || null;
+            let lastPointerTarget = { id: null, at: 0, x: 0, y: 0 };
+            let textDialogItemId = null;
+            let textDialogIsNew = false;
             let items = (JSON.parse(root.dataset.initial || '{"items":[]}').items || []);
 
             function point(event) {
@@ -172,13 +230,83 @@
                 });
             }
 
-            function setColor(nextColor) {
+            function selectedItem() {
+                return items.find((entry) => entry.id === selectedId) || null;
+            }
+
+            function setColor(nextColor, applyToSelection = false) {
                 currentColor = nextColor;
                 colorButtons.forEach((button) => {
                     const active = button.dataset.colorChoice === currentColor;
-                    button.classList.toggle('border-slate-950', active);
-                    button.classList.toggle('border-transparent', !active);
+                    button.classList.toggle('bg-indigo-50', active);
+                    button.classList.toggle('text-indigo-700', active);
                 });
+                const palette = colors[currentColor] || colors.indigo;
+                currentColorLabel.textContent = palette.label;
+                currentColorDot.className = `size-4 rounded-full ${palette.dot}`;
+
+                if (applyToSelection) {
+                    const item = selectedItem();
+
+                    if (item) {
+                        item.color = currentColor;
+                        render();
+                        markDirty(true);
+                    }
+                }
+            }
+
+            function editSelectedText() {
+                const item = selectedItem();
+
+                if (!item || !['note', 'text'].includes(item.type)) {
+                    return;
+                }
+
+                openTextDialog(item);
+            }
+
+            function openTextDialog(item, isNew = false) {
+                textDialogItemId = item.id;
+                textDialogIsNew = isNew;
+                textDialogTitle.textContent = item.type === 'note'
+                    ? (isNew ? 'New note' : 'Edit note')
+                    : (isNew ? 'New text' : 'Edit text');
+                textDialogInput.value = item.text || '';
+                textDialog.hidden = false;
+
+                window.setTimeout(() => {
+                    textDialogInput.focus();
+                    textDialogInput.select();
+                }, 0);
+            }
+
+            function closeTextDialog(removeNewItem = false) {
+                if (removeNewItem && textDialogItemId) {
+                    items = items.filter((item) => item.id !== textDialogItemId);
+                    selectedId = null;
+                    render();
+                }
+
+                textDialog.hidden = true;
+                textDialogInput.value = '';
+                textDialogItemId = null;
+                textDialogIsNew = false;
+            }
+
+            function saveTextDialog() {
+                const item = items.find((entry) => entry.id === textDialogItemId);
+
+                if (!item) {
+                    closeTextDialog(false);
+                    return;
+                }
+
+                const nextText = textDialogInput.value.trim();
+                item.text = nextText || (item.type === 'note' ? 'Project idea' : 'Text');
+                closeTextDialog(false);
+                render();
+                markDirty(true);
             }
 
             function escapeHtml(value) {
@@ -240,19 +368,27 @@
                 const cursor = point(event);
                 const id = `item-${Date.now()}-${Math.round(Math.random() * 1000)}`;
                 const color = currentColor;
+                let item = null;
 
                 if (mode === 'note') {
-                    items.push({ id, type: 'note', x: cursor.x, y: cursor.y, width: 220, height: 120, color, text: prompt('Note text') || 'Project idea' });
+                    item = { id, type: 'note', x: cursor.x, y: cursor.y, width: 220, height: 120, color, text: 'Project idea' };
                 } else if (mode === 'text') {
-                    items.push({ id, type: 'text', x: cursor.x, y: cursor.y, color, text: prompt('Text') || 'Milestone' });
+                    item = { id, type: 'text', x: cursor.x, y: cursor.y, color, text: 'Text' };
                 } else if (mode === 'rect') {
-                    items.push({ id, type: 'rect', x: cursor.x, y: cursor.y, width: 240, height: 140, color });
+                    item = { id, type: 'rect', x: cursor.x, y: cursor.y, width: 240, height: 140, color };
                 } else {
                     return;
                 }
 
+                items.push(item);
                 selectedId = id;
                 render();
+
+                if (['note', 'text'].includes(item.type)) {
+                    openTextDialog(item, true);
+                    return;
+                }
+
                 markDirty(true);
             }
 
@@ -328,7 +464,7 @@
             }
 
             async function refresh() {
-                if (dirty || saveInFlight || activeDrag || activePath) return;
+                if (dirty || saveInFlight || activeDrag || activePath || activeLine || !textDialog.hidden) return;
 
                 const response = await fetch(root.dataset.syncUrl, {
                     headers: { 'Accept': 'application/json' },
@@ -356,11 +492,34 @@
                 markDirty(true);
             });
             root.querySelector('[data-clear]').addEventListener('click', () => {
-                if (!confirm('Clear the whiteboard?')) return;
+                clearDialog.hidden = false;
+            });
+            root.querySelector('[data-clear-cancel]').addEventListener('click', () => {
+                clearDialog.hidden = true;
+            });
+            root.querySelector('[data-clear-confirm]').addEventListener('click', () => {
                 items = [];
                 selectedId = null;
+                clearDialog.hidden = true;
                 render();
                 markDirty(true);
+            });
+            root.querySelector('[data-text-cancel]').addEventListener('click', () => closeTextDialog(textDialogIsNew));
+            root.querySelector('[data-text-save]').addEventListener('click', saveTextDialog);
+            textDialog.addEventListener('click', (event) => {
+                if (event.target === textDialog) {
+                    closeTextDialog(textDialogIsNew);
+                }
+            });
+            textDialogInput.addEventListener('keydown', (event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    saveTextDialog();
+                }
+
+                if (event.key === 'Escape') {
+                    closeTextDialog(textDialogIsNew);
+                }
             });
 
             canvas.addEventListener('pointerdown', (event) => {
@@ -389,6 +548,23 @@
 
                 if (target) {
                     selectedId = target.dataset.itemId;
+                    const item = selectedItem();
+                    if (item?.color) {
+                        setColor(item.color, false);
+                    }
+                    const isDoublePointer = lastPointerTarget.id === selectedId
+                        && Date.now() - lastPointerTarget.at < 420
+                        && Math.abs(lastPointerTarget.x - event.clientX) < 8
+                        && Math.abs(lastPointerTarget.y - event.clientY) < 8;
+                    lastPointerTarget = { id: selectedId, at: Date.now(), x: event.clientX, y: event.clientY };
+
+                    if ((event.detail >= 2 || isDoublePointer) && ['note', 'text'].includes(item?.type)) {
+                        event.preventDefault();
+                        activeDrag = null;
+                        render();
+                        openTextDialog(item);
+                        return;
+                    }
                     activeDrag = { id: selectedId, last: cursor };
                     render();
                     return;
@@ -431,6 +607,17 @@
                 markDirty(true);
             });
 
+            canvas.addEventListener('dblclick', (event) => {
+                const target = event.target.closest('[data-item-id]');
+
+                if (!target) {
+                    return;
+                }
+
+                selectedId = target.dataset.itemId;
+                editSelectedText();
+            });
+
             window.addEventListener('pointerup', () => {
                 activeDrag = null;
                 activePath = null;
@@ -440,8 +627,8 @@
 
             render();
             setMode('select');
-            setColor(currentColor);
-            colorButtons.forEach((button) => button.addEventListener('click', () => setColor(button.dataset.colorChoice)));
+            setColor(currentColor, false);
+            colorButtons.forEach((button) => button.addEventListener('click', () => setColor(button.dataset.colorChoice, true)));
             setInterval(refresh, 650);
         })();
     </script>
