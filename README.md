@@ -19,18 +19,20 @@ Tasharuky is a Laravel project and task management workspace with role-based pro
 - Admin, project manager, and user roles
 - Dashboard with project/task/team summaries
 - Project CRUD, soft delete, restore, and favorites
+- Regular users can create their own projects and manage projects they own
 - Kanban task board with drag-and-drop status changes
+- Single `New Task` action inside the board filter bar
 - Multi-assignee tasks
 - Fast client-side board search and filters
-- Project files tab for task attachments
+- Project files tab with file/image previews, upload ownership, and task attachments
 - Project chat with `@mention` autocomplete
 - Realtime chat delivery through WebSockets
 - Realtime notification bell and notification center
-- Project invitation flow
+- Project invitation flow with explicit accept before membership is granted
 - Team management:
   - Admin can remove users from the system or from projects
   - Project managers can remove users from their projects
-- Collaborative project whiteboard
+- Collaborative project whiteboard with notes, text, boxes, lines, pen drawing, color editing, and custom edit dialogs
 - Password reset by email
 - JSON task API protected by HTTP Basic auth
 
@@ -112,6 +114,14 @@ Email: admin@taskari.test
 
 The database seeder also creates project managers, users, sample projects, and tasks for local testing.
 
+## Roles And Permissions
+
+- Admins can manage all projects, users, team membership, and task details.
+- Project managers can manage projects they own and remove users from those projects.
+- Users can create projects for themselves, manage their own projects, and create tasks in projects they can view.
+- Collaborators can see invited projects only after they accept the invitation.
+- Task status updates are allowed for users who can view the project or are assigned to the task.
+
 ## Database Notes
 
 The project uses domain tables for the workspace plus a few required support tables:
@@ -123,6 +133,7 @@ The project uses domain tables for the workspace plus a few required support tab
 - `project_invitations`
 - `project_messages`
 - `project_whiteboards`
+- `project_files`
 - `tasks`
 - `task_assignees`
 - `workspace_notifications`
@@ -147,6 +158,37 @@ Realtime features use Laravel Reverb private channels:
 Chat sending is optimistic in the UI: the message appears immediately while the database write completes in the background. If a request fails, the message card is marked `Not sent`.
 
 Polling remains as a light fallback, so the app still works if Reverb is temporarily offline.
+
+Notifications update the bell in realtime and are marked read automatically when opened. Project invitation notifications redirect to the invitation accept flow when the invitation is still pending.
+
+## Invitations
+
+Project invitations are not immediate memberships. When an existing user is invited:
+
+1. A pending `project_invitations` record is created.
+2. The invited user receives a notification and email.
+3. The project does not appear as a joined project yet.
+4. The user is added to `project_members` only after opening/accepting the invitation.
+
+The accept route supports browser links, so invitation URLs from email can be opened directly.
+
+## Files And Previews
+
+Project files support multiple uploads and show richer previews in the Files tab:
+
+- Images render as thumbnails.
+- PDFs render as embedded previews.
+- Documents, sheets, decks, archives, and text files render as file-type cards.
+- Project files show file size, upload time, and who uploaded them.
+- Task attachments appear in the same tab with matching preview cards.
+
+Supported upload types include images, PDF, Office documents, text/CSV, and zip files.
+
+## Whiteboard
+
+Each project includes a collaborative whiteboard tab. Users can add notes, text, boxes, lines, and freehand pen strokes. The color picker uses visual swatches, selected items can be recolored, and double-clicking notes or text opens a custom in-app edit dialog.
+
+Whiteboard changes autosync in the background; the UI does not expose internal save/sync state to users.
 
 ## Cloudflare R2
 
