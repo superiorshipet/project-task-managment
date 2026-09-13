@@ -228,7 +228,7 @@
                                     <span data-notification-badge class="{{ $headerUnreadNotificationsCount > 0 ? 'grid' : 'hidden' }} absolute -right-1 -top-1 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">{{ $headerUnreadNotificationsCount }}</span>
                                 </button>
 
-                                <div x-show="openNotifications" x-cloak x-transition.opacity.duration.150ms class="absolute right-0 z-40 mt-3 w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl sm:w-96">
+                                <div x-show="openNotifications" x-cloak x-transition.opacity.duration.150ms class="fixed left-3 right-3 top-24 z-50 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-96 sm:max-w-sm">
                                     <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
                                         <div>
                                             <p class="text-sm font-bold text-gray-950">Notifications</p>
