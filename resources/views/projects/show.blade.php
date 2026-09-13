@@ -103,6 +103,21 @@
     @if ($activeTab === 'board')
         @include('tasks._board', ['project' => $project, 'projects' => collect([$project])])
     @elseif ($activeTab === 'files')
+        @php
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            $fileBadgeClasses = [
+                'pdf' => 'bg-rose-50 text-rose-700',
+                'doc' => 'bg-blue-50 text-blue-700',
+                'docx' => 'bg-blue-50 text-blue-700',
+                'xls' => 'bg-emerald-50 text-emerald-700',
+                'xlsx' => 'bg-emerald-50 text-emerald-700',
+                'ppt' => 'bg-orange-50 text-orange-700',
+                'pptx' => 'bg-orange-50 text-orange-700',
+                'zip' => 'bg-amber-50 text-amber-700',
+            ];
+            $extensionFor = fn (string $name): string => strtolower(pathinfo($name, PATHINFO_EXTENSION) ?: 'file');
+            $badgeFor = fn (string $extension): string => $fileBadgeClasses[$extension] ?? 'bg-slate-100 text-slate-700';
+        @endphp
         <div class="space-y-5">
             <form method="POST" action="{{ route('projects.files.store', $project) }}" enctype="multipart/form-data" class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
                 @csrf
@@ -124,14 +139,35 @@
                 </div>
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     @forelse ($projectFiles as $file)
-                        <article class="rounded-xl border border-gray-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
+                        @php
+                            $extension = $extensionFor($file->original_name);
+                            $isImage = str($file->mime_type)->startsWith('image/');
+                            $isPdf = $file->mime_type === 'application/pdf' || $extension === 'pdf';
+                        @endphp
+                        <article class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:border-indigo-200 hover:shadow-md">
                             <a href="{{ $file->url() }}" target="_blank" class="block min-w-0">
-                                <p class="truncate font-semibold">{{ $file->original_name }}</p>
-                                <p class="mt-1 text-sm text-gray-500">{{ $file->humanSize() }} · Uploaded by {{ $file->user?->name ?? 'Deleted user' }}</p>
-                                <p class="mt-2 text-[11px] font-semibold text-gray-400">{{ $file->created_at->diffForHumans() }}</p>
+                                <div class="grid h-44 place-items-center overflow-hidden bg-slate-50">
+                                    @if ($isImage)
+                                        <img src="{{ $file->url() }}" alt="{{ $file->original_name }}" loading="lazy" class="h-full w-full object-cover">
+                                    @elseif ($isPdf)
+                                        <iframe src="{{ $file->url() }}#toolbar=0&navpanes=0" title="{{ $file->original_name }}" loading="lazy" class="pointer-events-none h-full w-full border-0"></iframe>
+                                    @else
+                                        <div class="grid size-24 place-items-center rounded-2xl {{ $badgeFor($extension) }}">
+                                            <span class="text-lg font-black uppercase">{{ str($extension)->limit(4, '') }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="p-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <p class="min-w-0 truncate font-semibold">{{ $file->original_name }}</p>
+                                        <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase {{ $badgeFor($extension) }}">{{ $extension }}</span>
+                                    </div>
+                                    <p class="mt-2 text-sm text-gray-500">{{ $file->humanSize() }} · Uploaded by {{ $file->user?->name ?? 'Deleted user' }}</p>
+                                    <p class="mt-2 text-[11px] font-semibold text-gray-400">{{ $file->created_at->diffForHumans() }}</p>
+                                </div>
                             </a>
                             @if (auth()->user()->canManageProject($project) || auth()->user()->is($file->user))
-                                <form method="POST" action="{{ route('projects.files.destroy', [$project, $file]) }}" class="mt-3" onsubmit="return confirm('Delete this file?');">
+                                <form method="POST" action="{{ route('projects.files.destroy', [$project, $file]) }}" class="border-t border-gray-100 p-4 pt-3" onsubmit="return confirm('Delete this file?');">
                                     @csrf
                                     @method('DELETE')
                                     <button class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">Delete</button>
@@ -151,9 +187,33 @@
                 </div>
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 @forelse ($taskFiles as $task)
-                    <a href="{{ Storage::disk(config('filesystems.default'))->url($task->attachment) }}" target="_blank" class="rounded-xl border border-gray-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30">
-                        <p class="font-semibold">{{ basename($task->attachment) }}</p>
-                        <p class="mt-1 text-sm text-gray-500">Attached to {{ $task->title }} · {{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
+                    @php
+                        $attachmentUrl = Storage::disk(config('filesystems.default'))->url($task->attachment);
+                        $attachmentName = basename($task->attachment);
+                        $extension = $extensionFor($attachmentName);
+                        $isImage = in_array($extension, $imageExtensions, true);
+                        $isPdf = $extension === 'pdf';
+                    @endphp
+                    <a href="{{ $attachmentUrl }}" target="_blank" class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:border-indigo-200 hover:shadow-md">
+                        <div class="grid h-40 place-items-center overflow-hidden bg-slate-50">
+                            @if ($isImage)
+                                <img src="{{ $attachmentUrl }}" alt="{{ $task->title }}" loading="lazy" class="h-full w-full object-cover">
+                            @elseif ($isPdf)
+                                <iframe src="{{ $attachmentUrl }}#toolbar=0&navpanes=0" title="{{ $task->title }}" loading="lazy" class="pointer-events-none h-full w-full border-0"></iframe>
+                            @else
+                                <div class="grid size-20 place-items-center rounded-2xl {{ $badgeFor($extension) }}">
+                                    <span class="text-base font-black uppercase">{{ str($extension)->limit(4, '') }}</span>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="min-w-0 truncate font-semibold">{{ $attachmentName }}</p>
+                                <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase {{ $badgeFor($extension) }}">{{ $extension }}</span>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">Attached to {{ $task->title }}</p>
+                            <p class="mt-1 text-xs font-semibold text-gray-400">{{ $task->assignees->pluck('name')->filter()->implode(', ') ?: ($task->assignee?->name ?? 'Unassigned') }}</p>
+                        </div>
                     </a>
                 @empty
                     <p class="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 md:col-span-2 xl:col-span-3">No task attachments yet.</p>
