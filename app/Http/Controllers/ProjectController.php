@@ -75,8 +75,6 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $users = WorkspaceLookups::users();
-
         $tasksQuery = Task::query()
             ->where('project_id', $project->id)
             ->visibleTo($request->user())
@@ -103,6 +101,7 @@ class ProjectController extends Controller
                 'tasks',
                 'tasks as completed_tasks_count' => fn ($query) => $query->where('status', 'completed'),
             ]);
+        $users = $project->assignableUsers();
         $mentionableUsers = collect([$project->owner])
             ->merge($project->members)
             ->merge(User::query()

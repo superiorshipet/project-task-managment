@@ -9,7 +9,6 @@ use App\Mail\TaskAssignedMail;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Support\WorkspaceLookups;
 use App\Support\WorkspaceNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -47,10 +46,18 @@ class TaskController extends Controller
             ]);
         }
 
+        $projects = Project::query()
+            ->visibleTo($request->user())
+            ->with(['owner:id,name,email,role', 'members:id,name,email,role'])
+            ->select(['id', 'title', 'user_id'])
+            ->orderBy('title')
+            ->get();
+        $users = $this->assignableUsersForProjects($projects);
+
         return view('tasks.index', [
             'tasksByStatus' => $tasks,
-            'projects' => Project::query()->visibleTo($request->user())->select(['id', 'title', 'user_id'])->orderBy('title')->get(),
-            'users' => WorkspaceLookups::users(),
+            'projects' => $projects,
+            'users' => $users,
             'statuses' => Task::STATUSES,
         ]);
     }
@@ -85,10 +92,17 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
 
+        $projects = Project::query()
+            ->visibleTo(request()->user())
+            ->with(['owner:id,name,email,role', 'members:id,name,email,role'])
+            ->select(['id', 'title', 'user_id'])
+            ->orderBy('title')
+            ->get();
+
         return view('tasks.edit', [
             'task' => $task->load(['project', 'assignee', 'assignees']),
-            'projects' => Project::query()->visibleTo(request()->user())->select(['id', 'title', 'user_id'])->orderBy('title')->get(),
-            'users' => WorkspaceLookups::users(),
+            'projects' => $projects,
+            'users' => $this->assignableUsersForProjects($projects),
         ]);
     }
 
@@ -233,6 +247,15 @@ class TaskController extends Controller
                 'assigned_users' => 'Assigned users must accept the project invitation before they can be added to a task.',
             ]);
         }
+    }
+
+    private function assignableUsersForProjects($projects)
+    {
+        return $projects
+            ->flatMap(fn (Project $project) => $project->assignableUsers())
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
     }
 
     private function sendAssignmentEmails(Task $task, iterable $users): void

@@ -1,18 +1,25 @@
 @csrf
 @php
+    $formProjects = collect($projects ?? []);
+    $initialProjectId = (int) old('project_id', $task->project_id ?? request('project_id', $formProjects->first()?->id));
+    $projectAssigneeMap = $formProjects
+        ->mapWithKeys(fn ($formProject) => [
+            (string) $formProject->id => $formProject->assignableUsers()->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
+        ])
+        ->all();
     $selectedAssignees = collect(old('assigned_users', isset($task)
         ? $task->assignees->pluck('id')->when($task->assigned_to, fn ($ids) => $ids->push($task->assigned_to))->unique()->values()->all()
         : []))
         ->map(fn ($id) => (int) $id)
         ->all();
 @endphp
-<div class="grid gap-5">
+<div class="grid gap-5" data-task-form data-project-assignees='@json($projectAssigneeMap)'>
     <div class="grid gap-5 md:grid-cols-2">
         <div>
             <label class="text-sm font-semibold text-gray-700">Project</label>
-            <select name="project_id" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400" required>
+            <select name="project_id" data-task-project-select class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400" required>
                 @foreach ($projects as $project)
-                    <option value="{{ $project->id }}" @selected((int) old('project_id', $task->project_id ?? request('project_id')) === $project->id)>{{ $project->title }}</option>
+                    <option value="{{ $project->id }}" @selected($initialProjectId === $project->id)>{{ $project->title }}</option>
                 @endforeach
             </select>
         </div>
@@ -20,7 +27,14 @@
             <label class="text-sm font-semibold text-gray-700">Assignees</label>
             <div class="mt-2 grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2">
                 @foreach ($users as $user)
-                    <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-indigo-50">
+                    @php
+                        $userProjectIds = collect($projectAssigneeMap)
+                            ->filter(fn ($assigneeIds) => in_array($user->id, $assigneeIds, true))
+                            ->keys()
+                            ->values()
+                            ->all();
+                    @endphp
+                    <label data-task-assignee-option data-project-ids='@json($userProjectIds)' class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-indigo-50">
                         <input
                             type="checkbox"
                             name="assigned_users[]"
@@ -32,6 +46,7 @@
                         <span class="min-w-0 truncate font-medium text-gray-700">{{ $user->name }}</span>
                     </label>
                 @endforeach
+                <p data-task-assignee-empty class="hidden rounded-lg border border-dashed border-gray-200 px-3 py-4 text-center text-sm font-medium text-gray-400">No accepted members for this project yet.</p>
             </div>
         </div>
     </div>
@@ -79,3 +94,40 @@
         <button class="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">{{ $button }}</button>
     </div>
 </div>
+
+@once
+    <script>
+        function syncTaskAssigneeOptions(form) {
+            const projectSelect = form.querySelector('[data-task-project-select]');
+            const options = Array.from(form.querySelectorAll('[data-task-assignee-option]'));
+            const empty = form.querySelector('[data-task-assignee-empty]');
+            const projectId = projectSelect?.value;
+            let visibleCount = 0;
+
+            options.forEach((option) => {
+                const projectIds = JSON.parse(option.dataset.projectIds || '[]').map(String);
+                const isVisible = Boolean(projectId) && projectIds.includes(String(projectId));
+                const input = option.querySelector('input[type="checkbox"]');
+
+                option.classList.toggle('hidden', !isVisible);
+
+                if (!isVisible && input) {
+                    input.checked = false;
+                }
+
+                if (isVisible) {
+                    visibleCount += 1;
+                }
+            });
+
+            empty?.classList.toggle('hidden', visibleCount > 0);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-task-form]').forEach((form) => {
+                syncTaskAssigneeOptions(form);
+                form.querySelector('[data-task-project-select]')?.addEventListener('change', () => syncTaskAssigneeOptions(form));
+            });
+        });
+    </script>
+@endonce

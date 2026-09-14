@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class Project extends Model
 {
@@ -66,6 +67,18 @@ class Project extends Model
     public function files(): HasMany
     {
         return $this->hasMany(ProjectFile::class);
+    }
+
+    public function assignableUsers(): Collection
+    {
+        $this->loadMissing(['owner:id,name,email,role', 'members:id,name,email,role']);
+
+        return collect([$this->owner])
+            ->merge($this->members)
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
     }
 
     public function scopeSearch(Builder $query, ?string $keyword): Builder
