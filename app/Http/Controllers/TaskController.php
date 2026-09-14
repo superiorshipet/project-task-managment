@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class TaskController extends Controller
@@ -61,6 +62,7 @@ class TaskController extends Controller
 
         $data = $request->validated();
         $assignedUserIds = $this->assignedUserIds($request);
+        $this->ensureAssigneesBelongToProject($project, $assignedUserIds);
         $data['assigned_to'] = $assignedUserIds[0] ?? null;
         unset($data['assigned_users']);
         $data['progress'] = $this->progressFor($data['status']);
@@ -100,6 +102,7 @@ class TaskController extends Controller
 
         $data = $request->validated();
         $assignedUserIds = $this->assignedUserIds($request);
+        $this->ensureAssigneesBelongToProject($targetProject, $assignedUserIds);
         $oldAssignedUserIds = $task->assignees()->pluck('users.id')->push($task->assigned_to)->filter()->unique()->values()->all();
         $data['assigned_to'] = $assignedUserIds[0] ?? null;
         unset($data['assigned_users']);
@@ -209,7 +212,27 @@ class TaskController extends Controller
     private function syncTaskAssignees(Task $task, array $userIds): void
     {
         $task->assignees()->sync($userIds);
-        $task->project->members()->syncWithoutDetaching($userIds);
+    }
+
+    private function ensureAssigneesBelongToProject(Project $project, array $userIds): void
+    {
+        if ($userIds === []) {
+            return;
+        }
+
+        $allowedUserIds = $project->members()
+            ->pluck('users.id')
+            ->push($project->user_id)
+            ->unique()
+            ->values();
+
+        $unauthorizedUserIds = collect($userIds)->diff($allowedUserIds);
+
+        if ($unauthorizedUserIds->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'assigned_users' => 'Assigned users must accept the project invitation before they can be added to a task.',
+            ]);
+        }
     }
 
     private function sendAssignmentEmails(Task $task, iterable $users): void

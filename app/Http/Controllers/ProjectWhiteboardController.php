@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\ProjectWhiteboard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -45,30 +46,60 @@ class ProjectWhiteboardController extends Controller
         $validated = $request->validate([
             'data' => ['required', 'array'],
             'data.items' => ['nullable', 'array', 'max:250'],
+            'data.deleted_item_ids' => ['nullable', 'array', 'max:250'],
+            'data.deleted_item_ids.*' => ['string', 'max:64'],
+            'data.clear' => ['nullable', 'boolean'],
         ]);
 
-        $data = [
-            'items' => collect(data_get($validated, 'data.items', []))
-                ->filter(fn ($item) => is_array($item))
-                ->map(fn (array $item) => $this->normalizeItem($item))
-                ->filter()
-                ->values()
-                ->all(),
-        ];
+        $incomingItems = collect(data_get($validated, 'data.items', []))
+            ->filter(fn ($item) => is_array($item))
+            ->map(fn (array $item) => $this->normalizeItem($item))
+            ->filter()
+            ->values();
 
-        if (strlen(json_encode($data)) > 200000) {
-            throw ValidationException::withMessages([
-                'data' => 'The whiteboard is too large to save right now.',
-            ]);
-        }
+        $deletedItemIds = collect(data_get($validated, 'data.deleted_item_ids', []))
+            ->map(fn ($id) => Str::limit((string) $id, 64, ''))
+            ->filter()
+            ->all();
 
-        $whiteboard = ProjectWhiteboard::query()->updateOrCreate(
-            ['project_id' => $project->id],
-            [
+        $whiteboard = DB::transaction(function () use ($project, $request, $incomingItems, $deletedItemIds): ProjectWhiteboard {
+            $existingWhiteboard = ProjectWhiteboard::query()
+                ->where('project_id', $project->id)
+                ->lockForUpdate()
+                ->first();
+
+            $items = collect(data_get($existingWhiteboard?->data, 'items', []))
+                ->filter(fn ($item) => is_array($item) && filled($item['id'] ?? null))
+                ->keyBy('id');
+
+            if ($request->boolean('data.clear')) {
+                $items = collect();
+            }
+
+            $items = $items->except($deletedItemIds);
+
+            foreach ($incomingItems as $item) {
+                $items->put($item['id'], $item);
+            }
+
+            $data = [
+                'items' => $items->values()->all(),
+            ];
+
+            if (strlen(json_encode($data)) > 200000) {
+                throw ValidationException::withMessages([
+                    'data' => 'The whiteboard is too large to save right now.',
+                ]);
+            }
+
+            $whiteboard = $existingWhiteboard ?? new ProjectWhiteboard(['project_id' => $project->id]);
+            $whiteboard->fill([
                 'data' => $data,
                 'updated_by' => $request->user()->id,
-            ],
-        )->load('updatedBy:id,name,email,role');
+            ])->save();
+
+            return $whiteboard;
+        })->load('updatedBy:id,name,email,role');
 
         return response()->json($this->snapshot($whiteboard));
     }
@@ -111,10 +142,14 @@ class ProjectWhiteboardController extends Controller
             'text' => Str::limit((string) ($item['text'] ?? ''), 220, ''),
         ];
 
-        foreach (['x', 'y', 'width', 'height', 'x1', 'y1', 'x2', 'y2'] as $key) {
+        foreach (['x', 'y', 'width', 'height', 'x1', 'y1', 'x2', 'y2', 'fontSize'] as $key) {
             if (isset($item[$key]) && is_numeric($item[$key])) {
                 $base[$key] = max(-5000, min(5000, (float) $item[$key]));
             }
+        }
+
+        if (isset($base['fontSize'])) {
+            $base['fontSize'] = max(12, min(96, (float) $base['fontSize']));
         }
 
         if ($type === 'path') {

@@ -204,6 +204,7 @@
             let currentColor = 'indigo';
             let selectedId = null;
             let activeDrag = null;
+            let activeResize = null;
             let activePath = null;
             let activeLine = null;
             let dirty = false;
@@ -216,6 +217,9 @@
             let lastPointerTarget = { id: null, at: 0, x: 0, y: 0 };
             let textDialogItemId = null;
             let textDialogIsNew = false;
+            let clearRequested = false;
+            const changedItemIds = new Set();
+            const deletedItemIds = new Set();
             let items = (JSON.parse(root.dataset.initial || '{"items":[]}').items || []);
 
             function point(event) {
@@ -241,6 +245,12 @@
                 return items.find((entry) => entry.id === selectedId) || null;
             }
 
+            function markItemChanged(item) {
+                if (item?.id) {
+                    changedItemIds.add(item.id);
+                }
+            }
+
             function setColor(nextColor, applyToSelection = false) {
                 currentColor = nextColor;
                 colorButtons.forEach((button) => {
@@ -257,6 +267,7 @@
 
                     if (item) {
                         item.color = currentColor;
+                        markItemChanged(item);
                         render();
                         markDirty(true);
                     }
@@ -311,6 +322,7 @@
 
                 const nextText = textDialogInput.value.trim();
                 item.text = nextText || (item.type === 'note' ? 'Project idea' : 'Text');
+                markItemChanged(item);
                 closeTextDialog(false);
                 render();
                 markDirty(true);
@@ -324,6 +336,24 @@
                     '"': '&quot;',
                     "'": '&#039;',
                 })[char]);
+            }
+
+            function clamp(value, min, max) {
+                return Math.max(min, Math.min(max, value));
+            }
+
+            function estimateTextWidth(item) {
+                const fontSize = Number(item.fontSize || 28);
+
+                return Math.max(80, String(item.text || 'Text').length * fontSize * 0.58);
+            }
+
+            function resizeHandleMarkup(item, x, y) {
+                if (selectedId !== item.id || !['note', 'rect', 'text'].includes(item.type)) {
+                    return '';
+                }
+
+                return `<rect data-item-id="${item.id}" data-resize-handle="1" class="cursor-nwse-resize" x="${x - 7}" y="${y - 7}" width="14" height="14" rx="4" fill="#ffffff" stroke="#020617" stroke-width="2"/>`;
             }
 
             function markDirty(live = false) {
@@ -344,18 +374,35 @@
                 const selected = selectedId === item.id ? '#020617' : palette.stroke;
 
                 if (item.type === 'note') {
+                    const width = Number(item.width || 210);
+                    const height = Number(item.height || 110);
+
                     return `<g data-item-id="${item.id}" class="cursor-move">
-                        <rect x="${item.x}" y="${item.y}" width="${item.width || 210}" height="${item.height || 110}" rx="16" fill="${palette.fill}" stroke="${selected}" stroke-width="2"/>
+                        <rect x="${item.x}" y="${item.y}" width="${width}" height="${height}" rx="16" fill="${palette.fill}" stroke="${selected}" stroke-width="2"/>
                         <text x="${Number(item.x) + 18}" y="${Number(item.y) + 34}" fill="${palette.text}" font-size="18" font-weight="700">${escapeHtml(item.text || 'New note')}</text>
+                        ${resizeHandleMarkup(item, Number(item.x) + width, Number(item.y) + height)}
                     </g>`;
                 }
 
                 if (item.type === 'text') {
-                    return `<text data-item-id="${item.id}" class="cursor-move" x="${item.x}" y="${item.y}" fill="${palette.text}" font-size="28" font-weight="800">${escapeHtml(item.text || 'Text')}</text>`;
+                    const fontSize = Number(item.fontSize || 28);
+                    const handleX = Number(item.x) + estimateTextWidth(item);
+                    const handleY = Number(item.y) - fontSize;
+
+                    return `<g data-item-id="${item.id}" class="cursor-move">
+                        <text x="${item.x}" y="${item.y}" fill="${palette.text}" font-size="${fontSize}" font-weight="800">${escapeHtml(item.text || 'Text')}</text>
+                        ${resizeHandleMarkup(item, handleX, handleY)}
+                    </g>`;
                 }
 
                 if (item.type === 'rect') {
-                    return `<rect data-item-id="${item.id}" class="cursor-move" x="${item.x}" y="${item.y}" width="${item.width || 220}" height="${item.height || 130}" rx="20" fill="${palette.fill}" stroke="${selected}" stroke-width="3"/>`;
+                    const width = Number(item.width || 220);
+                    const height = Number(item.height || 130);
+
+                    return `<g data-item-id="${item.id}" class="cursor-move">
+                        <rect x="${item.x}" y="${item.y}" width="${width}" height="${height}" rx="20" fill="${palette.fill}" stroke="${selected}" stroke-width="3"/>
+                        ${resizeHandleMarkup(item, Number(item.x) + width, Number(item.y) + height)}
+                    </g>`;
                 }
 
                 if (item.type === 'line') {
@@ -389,6 +436,7 @@
 
                 items.push(item);
                 selectedId = id;
+                markItemChanged(item);
                 render();
 
                 if (['note', 'text'].includes(item.type)) {
@@ -416,6 +464,21 @@
                 }
             }
 
+            function resizeItem(item, cursor) {
+                if (!activeResize || activeResize.id !== item.id) return;
+
+                if (['note', 'rect'].includes(item.type)) {
+                    item.width = Math.round(clamp(cursor.x - activeResize.origin.x, 70, 900));
+                    item.height = Math.round(clamp(cursor.y - activeResize.origin.y, 45, 620));
+                    return;
+                }
+
+                if (item.type === 'text') {
+                    const delta = ((cursor.x - activeResize.start.x) + (cursor.y - activeResize.start.y)) / 8;
+                    item.fontSize = Math.round(clamp(activeResize.fontSize + delta, 12, 96));
+                }
+            }
+
             async function save() {
                 if (!dirty && !saveQueued) return;
 
@@ -429,7 +492,17 @@
                 saveQueued = false;
                 lastLiveSaveAt = Date.now();
 
-                const payloadToSave = { data: { items } };
+                const changedSnapshot = Array.from(changedItemIds);
+                const deletedSnapshot = Array.from(deletedItemIds);
+                const clearSnapshot = clearRequested;
+                const itemsToSave = items.filter((item) => changedItemIds.has(item.id));
+                const payloadToSave = {
+                    data: {
+                        items: itemsToSave,
+                        deleted_item_ids: deletedSnapshot,
+                        clear: clearSnapshot,
+                    },
+                };
                 let failed = false;
 
                 try {
@@ -451,6 +524,13 @@
                     const payload = await response.json();
                     lastUpdatedAt = payload.updated_at;
                     lastRevision = payload.revision;
+                    if (!saveQueued) {
+                        changedSnapshot.forEach((id) => changedItemIds.delete(id));
+                        deletedSnapshot.forEach((id) => deletedItemIds.delete(id));
+                    }
+                    if (clearSnapshot && !saveQueued) {
+                        clearRequested = false;
+                    }
                     dirty = saveQueued;
                 } catch (error) {
                     failed = true;
@@ -471,7 +551,7 @@
             }
 
             async function refresh() {
-                if (dirty || saveInFlight || activeDrag || activePath || activeLine || !textDialog.hidden) return;
+                if (dirty || saveInFlight || activeDrag || activeResize || activePath || activeLine || !textDialog.hidden) return;
 
                 const response = await fetch(root.dataset.syncUrl, {
                     headers: { 'Accept': 'application/json' },
@@ -493,6 +573,8 @@
             root.querySelector('[data-save]').addEventListener('click', save);
             root.querySelector('[data-delete]').addEventListener('click', () => {
                 if (!selectedId) return;
+                deletedItemIds.add(selectedId);
+                changedItemIds.delete(selectedId);
                 items = items.filter((item) => item.id !== selectedId);
                 selectedId = null;
                 render();
@@ -507,6 +589,9 @@
             root.querySelector('[data-clear-confirm]').addEventListener('click', () => {
                 items = [];
                 selectedId = null;
+                changedItemIds.clear();
+                deletedItemIds.clear();
+                clearRequested = true;
                 clearDialog.hidden = true;
                 render();
                 markDirty(true);
@@ -530,13 +615,31 @@
             });
 
             canvas.addEventListener('pointerdown', (event) => {
+                const resizeHandle = event.target.closest('[data-resize-handle]');
                 const target = event.target.closest('[data-item-id]');
                 const cursor = point(event);
+
+                if (resizeHandle) {
+                    selectedId = resizeHandle.dataset.itemId;
+                    const item = selectedItem();
+                    if (!item) return;
+
+                    activeResize = {
+                        id: item.id,
+                        start: cursor,
+                        origin: { x: Number(item.x || 0), y: Number(item.y || 0) },
+                        fontSize: Number(item.fontSize || 28),
+                    };
+                    canvas.setPointerCapture?.(event.pointerId);
+                    render();
+                    return;
+                }
 
                 if (mode === 'path' && !target) {
                     activePath = { id: `item-${Date.now()}`, type: 'path', color: currentColor, points: [cursor] };
                     items.push(activePath);
                     selectedId = activePath.id;
+                    markItemChanged(activePath);
                     canvas.setPointerCapture?.(event.pointerId);
                     render();
                     markDirty(true);
@@ -547,6 +650,7 @@
                     activeLine = { id: `item-${Date.now()}`, type: 'line', x1: cursor.x, y1: cursor.y, x2: cursor.x, y2: cursor.y, color: currentColor };
                     items.push(activeLine);
                     selectedId = activeLine.id;
+                    markItemChanged(activeLine);
                     canvas.setPointerCapture?.(event.pointerId);
                     render();
                     markDirty(true);
@@ -590,6 +694,7 @@
 
                 if (activePath) {
                     activePath.points.push(cursor);
+                    markItemChanged(activePath);
                     render();
                     markDirty(true);
                     return;
@@ -598,6 +703,18 @@
                 if (activeLine) {
                     activeLine.x2 = cursor.x;
                     activeLine.y2 = cursor.y;
+                    markItemChanged(activeLine);
+                    render();
+                    markDirty(true);
+                    return;
+                }
+
+                if (activeResize) {
+                    const item = items.find((entry) => entry.id === activeResize.id);
+                    if (!item) return;
+
+                    resizeItem(item, cursor);
+                    markItemChanged(item);
                     render();
                     markDirty(true);
                     return;
@@ -610,6 +727,7 @@
 
                 moveItem(item, cursor.x - activeDrag.last.x, cursor.y - activeDrag.last.y);
                 activeDrag.last = cursor;
+                markItemChanged(item);
                 render();
                 markDirty(true);
             });
@@ -627,6 +745,7 @@
 
             window.addEventListener('pointerup', () => {
                 activeDrag = null;
+                activeResize = null;
                 activePath = null;
                 activeLine = null;
                 save();

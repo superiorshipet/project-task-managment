@@ -469,6 +469,12 @@
             });
 
             input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && !event.shiftKey && list.hidden) {
+                    event.preventDefault();
+                    chat.requestSubmit();
+                    return;
+                }
+
                 if (list.hidden) return;
 
                 if (event.key === 'ArrowDown') {
