@@ -37,7 +37,6 @@
             </div>
 
             <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-                <button type="button" onclick="document.querySelector('[data-project-task-search]')?.focus()" class="grid size-9 place-items-center rounded-lg text-gray-500 transition hover:bg-gray-100">⌕</button>
                 <a href="{{ route('notifications.index', ['type' => 'task_status_changed']) }}" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Updates</a>
                 <button type="button" @click="navigator.clipboard.writeText(window.location.href); copied = true; setTimeout(() => copied = false, 1400)" class="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
                     <span x-show="! copied">Share</span>
